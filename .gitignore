@@ -89,5 +89,11 @@ ssl/*.cert
 ssl/*.csr
 ssl/*.pem
 
+# GitHub
+.github/
+
 # etc
 memo.md
+
+#personally
+.prettierrc
