@@ -1,15 +1,21 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import TaskPage from './pages/TaskPage';
-import GanttPage from './pages/GanttPage';
-import CalendarPage from './pages/CalendarPage';
-import SettingsPage from './pages/SettingsPage';
-import UserProfilePage from './pages/UserProfilePage';
-import AdminPage from './pages/AdminPage';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import TaskPage from "./pages/TaskPage";
+import GanttPage from "./pages/GanttPage";
+import CalendarPage from "./pages/CalendarPage";
+import SettingsPage from "./pages/SettingsPage";
+import UserProfilePage from "./pages/UserProfilePage";
+import AdminPage from "./pages/AdminPage";
+import Layout from "./components/Layout/Layout";
 
 function App() {
   return (
@@ -18,70 +24,70 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          
+
           <Route
             path="/"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <Layout>{<DashboardPage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/tasks"
             element={
               <ProtectedRoute>
-                <TaskPage />
+                <Layout>{<TaskPage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/gantt"
             element={
               <ProtectedRoute>
-                <GanttPage />
+                <Layout>{<GanttPage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/calendar"
             element={
               <ProtectedRoute>
-                <CalendarPage />
+                <Layout>{<CalendarPage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/settings"
             element={
               <ProtectedRoute>
-                <SettingsPage />
+                <Layout>{<SettingsPage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/profile"
             element={
               <ProtectedRoute>
-                <UserProfilePage />
+                <Layout>{<UserProfilePage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/admin"
             element={
               <ProtectedRoute requireAdmin>
-                <AdminPage />
+                <Layout>{<AdminPage />}</Layout>
               </ProtectedRoute>
             }
           />
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
