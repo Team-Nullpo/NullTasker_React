@@ -7,10 +7,12 @@
       "email": "admin@nulltasker.com",
       "password": "$2b$10$bZc73/i5oJTs/NHG6Gu1VOE0BYUcncceGZ8BmR89hS5sYJZ4278aG",
       "role": "system_admin",
-      "projects": ["default"],
+      "projects": [
+        "default"
+      ],
       "createdAt": "2025-09-01T00:00:00.000Z",
-      "lastLogin": null
+      "lastLogin": "2026-01-16T14:02:49.849Z"
     }
   ],
-  "lastUpdated": "2025-10-18T14:20:41.763Z"
+  "lastUpdated": "2026-01-16T14:02:49.849Z"
 }

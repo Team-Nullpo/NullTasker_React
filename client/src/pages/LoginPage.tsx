@@ -1,25 +1,27 @@
-import { useState, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import '../styles/login.css';
+import { useState, FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import "../styles/login.css";
 
 const LoginPage = () => {
-  const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       await login(loginId, password, rememberMe);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'ログインに失敗しました');
+      setError(
+        err.response?.data?.message || err.message || "ログインに失敗しました"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -34,11 +36,7 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
 
           <div className="form-group">
             <label htmlFor="loginId">ログインID</label>
@@ -79,12 +77,8 @@ const LoginPage = () => {
             </label>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn-primary" 
-            disabled={isLoading}
-          >
-            {isLoading ? 'ログイン中...' : 'ログイン'}
+          <button type="submit" className="btn-primary" disabled={isLoading}>
+            {isLoading ? "ログイン中..." : "ログイン"}
           </button>
         </form>
 
@@ -97,7 +91,9 @@ const LoginPage = () => {
 
         <div className="login-info">
           <p>デフォルト管理者アカウント:</p>
-          <p>ID: <strong>admin</strong> / パスワード: <strong>admin123</strong></p>
+          <p>
+            ID: <strong>admin</strong> / パスワード: <strong>admin123</strong>
+          </p>
         </div>
       </div>
     </div>
