@@ -14,9 +14,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import styles from "./SideBar.module.css";
 
-const SideBar: React.FC = () => {
-  const [isHidden, setIsHidden] = useState(false);
+interface SideBarProps {
+  isHidden: boolean;
+  setIsHidden: (value: boolean) => void;
+}
 
+const SideBar: React.FC<SideBarProps> = ({ isHidden, setIsHidden }) => {
   const toggleSidebar = () => {
     setIsHidden(!isHidden);
   };
