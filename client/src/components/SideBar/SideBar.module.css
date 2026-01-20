@@ -127,19 +127,20 @@
 .menu {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 .menu a {
   color: var(--gray-800);
   text-decoration: none;
-  font-size: var(--font-size-lg);
+  font-size: 18px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-sm);
+  gap: var(--spacing-lg);
+  padding: 16px 20px;
   border-radius: var(--border-radius-sm);
   transition: all 0.2s ease;
+  min-height: 56px;
 }
 
 .menu a:hover {
@@ -147,9 +148,14 @@
 }
 
 .menu a i {
-  font-size: var(--font-size-xl);
-  width: 20px;
+  font-size: 24px;
+  width: 28px;
   text-align: center;
+}
+
+.menu a svg {
+  font-size: 24px;
+  width: 28px;
 }
 
 .menu a.active {
