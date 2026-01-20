@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, Transition } from "motion/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -37,19 +36,6 @@ const SideBar: React.FC<SideBarProps> = ({ isHidden, setIsHidden }) => {
     type: "spring",
     stiffness: 300,
     damping: 30,
-  };
-
-  // トグルボタンのアニメーション設定
-  const toggleBtnVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.8,
-    },
   };
 
   const toggleBtnTransition: Transition = {
