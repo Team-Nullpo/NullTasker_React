@@ -1,19 +1,20 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3443/api';
+// 開発環境ではViteのproxyを使用するため、相対パスを使用
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 // Axiosインスタンスの作成
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // リクエストインターセプター：トークンを自動的に付与
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -21,7 +22,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // レスポンスインターセプター：エラーハンドリング
@@ -35,7 +36,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = localStorage.getItem("refreshToken");
         if (refreshToken) {
           const response = await axios.post(`${API_BASE_URL}/refresh`, {
             refreshToken,
@@ -43,23 +44,23 @@ apiClient.interceptors.response.use(
 
           if (response.data.success) {
             const newToken = response.data.token;
-            localStorage.setItem('token', newToken);
+            localStorage.setItem("token", newToken);
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return apiClient(originalRequest);
           }
         }
       } catch (refreshError) {
         // リフレッシュ失敗時はログアウト
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;
