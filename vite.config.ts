@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,25 +9,26 @@ const __dirname = dirname(__filename);
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  root: 'client',
-  publicDir: 'public',
+  root: "client",
+  publicDir: "public",
   build: {
-    outDir: '../dist',
+    outDir: "../dist",
     emptyOutDir: true,
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './client/src'),
-      '@shared': resolve(__dirname, './shared'),
+      "@": resolve(__dirname, "./client/src"),
+      "@shared": resolve(__dirname, "./shared"),
     },
   },
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "https://localhost:3443",
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path,
       },
     },
   },

@@ -9,11 +9,11 @@
   flex-direction: column;
   padding: var(--spacing-md) var(--spacing-xs);
   border-right: 1px solid #ccc;
-  transition: transform 0.3s ease;
+  height: 100vh;
+  box-shadow: var(--box-shadow-lg);
   position: fixed;
   left: 0;
   top: 0;
-  height: 100vh;
   z-index: 1000;
 }
 
@@ -75,7 +75,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
