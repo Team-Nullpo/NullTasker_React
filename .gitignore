@@ -75,13 +75,19 @@ tmp/
 temp/
 
 # BuckUp files
-config/backup/*
-!config/backup/.gitkeep
+server/config/backups/*
+!server/config/backups/.gitkeep
 
-config/settings.json
-config/tickets.json
-config/users.json
-config/projects.json
+server/config/settings.json
+server/config/tickets.json
+server/config/users.json
+server/config/projects.json
+
+# Build output
+dist/
+
+# Archive (旧ファイル)
+archive/
 
 # SSL certificates
 ssl/*.key

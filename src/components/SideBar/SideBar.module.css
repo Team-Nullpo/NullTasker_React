@@ -9,11 +9,11 @@
   flex-direction: column;
   padding: var(--spacing-md) var(--spacing-xs);
   border-right: 1px solid #ccc;
-  transition: transform 0.3s ease;
+  height: 100vh;
+  box-shadow: var(--box-shadow-lg);
   position: fixed;
   left: 0;
   top: 0;
-  height: 100vh;
   z-index: 1000;
 }
 
@@ -34,7 +34,7 @@
   display: none;
 }
 
-.sidebar.collapsed .bottom-section {
+.sidebar.collapsed .bottomSection {
   flex-direction: column;
   gap: var(--spacing-lg);
 }
@@ -62,7 +62,7 @@
 }
 
 /* サイドバー非表示ボタン */
-.sidebar-hide-btn {
+.sidebarHideBtn {
   background-color: rgba(255, 255, 255, 0.9);
   color: var(--gray-800);
   border: 1px solid #ccc;
@@ -75,25 +75,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
-.sidebar-hide-btn:hover {
+.sidebarHideBtn:hover {
   background-color: #f0f0f0;
   transform: scale(1.05);
 }
 
-.sidebar-hide-btn:active {
+.sidebarHideBtn:active {
   transform: scale(0.95);
 }
 
-.sidebar.hidden .sidebar-hide-btn {
+.sidebar.hidden .sidebarHideBtn {
   display: none;
 }
 
 /* トグルボタン */
-.toggle-btn {
+.toggleBtn {
   position: fixed;
   top: 20px;
   left: 20px;
@@ -114,12 +113,12 @@
   transition: all 0.3s ease;
 }
 
-.toggle-btn:hover {
+.toggleBtn:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.toggle-btn:active {
+.toggleBtn:active {
   transform: scale(0.95);
 }
 
@@ -127,19 +126,20 @@
 .menu {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 .menu a {
   color: var(--gray-800);
   text-decoration: none;
-  font-size: var(--font-size-lg);
+  font-size: 18px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-sm);
+  gap: var(--spacing-lg);
+  padding: 16px 20px;
   border-radius: var(--border-radius-sm);
   transition: all 0.2s ease;
+  min-height: 56px;
 }
 
 .menu a:hover {
@@ -147,9 +147,14 @@
 }
 
 .menu a i {
-  font-size: var(--font-size-xl);
-  width: 20px;
+  font-size: 24px;
+  width: 28px;
   text-align: center;
+}
+
+.menu a svg {
+  font-size: 24px;
+  width: 28px;
 }
 
 .menu a.active {
@@ -163,7 +168,7 @@
 }
 
 /* ボトムセクション */
-.bottom-section {
+.bottomSection {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -179,7 +184,7 @@
   background-color: white;
 }
 
-.user-icon {
+.userIcon {
   position: relative;
   cursor: pointer;
   padding: 8px;
@@ -187,16 +192,16 @@
   transition: background-color 0.2s ease;
 }
 
-.user-icon:hover {
+.userIcon:hover {
   background-color: rgba(0, 123, 255, 0.1);
 }
 
-.user-icon i {
+.userIcon i {
   font-size: 32px;
   color: var(--gray-800);
 }
 
-.user-icon .user-initial {
+.userIcon .userInitial {
   font-size: 18px;
   font-weight: bold;
   color: var(--primary-color);
@@ -215,37 +220,37 @@
 
 /* ロゴ - ダークテーマ */
 body.theme-dark .logo img {
-  content: url('../assets/logowhite.png');
+  content: url("/logowhite.png");
 }
 
 /* サイドバー非表示ボタン - ダークテーマ */
-body.theme-dark .sidebar-hide-btn {
+body.theme-dark .sidebarHideBtn {
   background-color: rgba(60, 60, 67, 0.9);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
-body.theme-dark .sidebar-hide-btn:hover {
+body.theme-dark .sidebarHideBtn:hover {
   background-color: var(--bg-tertiary);
 }
 
 /* トグルボタン - ダークテーマ */
-body.theme-dark .toggle-btn {
+body.theme-dark .toggleBtn {
   background-color: #0a84ff;
   border: 1px solid #0a84ff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
-body.theme-dark .toggle-btn:hover {
+body.theme-dark .toggleBtn:hover {
   background-color: #409cff;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
 }
 
 /* ユーザーアイコン - ダークテーマ */
-body.theme-dark .user-icon:hover {
+body.theme-dark .userIcon:hover {
   background-color: rgba(10, 132, 255, 0.15);
 }
 
-body.theme-dark .user-icon i {
+body.theme-dark .userIcon i {
   color: var(--text-primary);
 }

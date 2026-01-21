@@ -182,116 +182,14 @@ const isPublicRoute = (path) => {
   return publicRoutes.some((route) => path.includes(route));
 };
 
-// 静的ファイルの配信を新しいフォルダ構造に対応
-// /src/パスでアクセスされるファイルをsrcディレクトリから配信
-app.use("/src", express.static("src"));
-// ルートレベルでも静的ファイルにアクセス可能にする
-app.use("/scripts", express.static(path.join("src", "scripts")));
-app.use("/styles", express.static(path.join("src", "styles")));
-app.use("/assets", express.static(path.join("src", "assets")));
-app.use("/config", express.static("config"));
+// React ビルドファイルの配信
+app.use(express.static(path.join(__dirname, "..", "dist")));
 
 // ファイルパスを新しい構造に合わせて更新
 const TICKETS_FILE = path.join(__dirname, "config", "tickets.json");
 const SETTINGS_FILE = path.join(__dirname, "config", "settings.json");
 const USERS_FILE = path.join(__dirname, "config", "users.json");
 const PROJECTS_FILE = path.join(__dirname, "config", "projects.json");
-
-// ルートアクセス時にindex.htmlを返す（認証チェック付き）
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "index.html"));
-});
-
-// ログインページ
-app.get("/login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "login.html"));
-});
-
-// ログインページ（別ルート）
-app.get("/src/pages/login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "login.html"));
-});
-
-// 登録ページ
-app.get("/register.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "register.html"));
-});
-
-// index.htmlへの直接アクセスもサポート
-app.get("/index.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "index.html"));
-});
-
-// /pages/index.html へのアクセス
-app.get("/pages/index.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "index.html"));
-});
-
-// /src/pages/index.html へのアクセス
-app.get("/src/pages/index.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "index.html"));
-});
-
-// 個別ページのルーティング（.htmlファイルへの直接アクセスもサポート）
-app.get("/task", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "task.html"));
-});
-
-app.get("/task.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "task.html"));
-});
-
-app.get("/src/pages/task.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "task.html"));
-});
-
-app.get("/calendar", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "calendar.html"));
-});
-
-app.get("/calendar.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "calendar.html"));
-});
-
-app.get("/src/pages/calendar.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "calendar.html"));
-});
-
-app.get("/gantt", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "gantt.html"));
-});
-
-app.get("/gantt.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "gantt.html"));
-});
-
-app.get("/src/pages/gantt.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "gantt.html"));
-});
-
-app.get("/setting", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "setting.html"));
-});
-
-app.get("/setting.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "setting.html"));
-});
-
-app.get("/src/pages/setting.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "setting.html"));
-});
-
-app.get("/debug-storage", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "debug-storage.html"));
-});
-
-app.get("/debug-storage.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "debug-storage.html"));
-});
-
-app.get("/src/pages/debug-storage.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src", "pages", "debug-storage.html"));
-});
 
 // ユーザー登録
 app.post("/api/register", registerValidation, async (req, res) => {
@@ -1458,11 +1356,16 @@ app.get("/api/users", authenticateToken, async (req, res) => {
   }
 });
 
+// SPA fallback - すべてのルートでReact appのindex.htmlを返す
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
+});
+
 // サーバー起動
 if (USE_HTTPS) {
   // SSL証明書のパス
-  const sslKeyPath = path.join(__dirname, "ssl", "server.key");
-  const sslCertPath = path.join(__dirname, "ssl", "server.cert");
+  const sslKeyPath = path.join(__dirname, "..", "ssl", "server.key");
+  const sslCertPath = path.join(__dirname, "..", "ssl", "server.cert");
 
   // SSL証明書の存在確認
   if (!fsSync.existsSync(sslKeyPath) || !fsSync.existsSync(sslCertPath)) {
@@ -1483,7 +1386,9 @@ if (USE_HTTPS) {
     console.log(`HTTPSサーバーが起動しました: https://localhost:${HTTPS_PORT}`);
     console.log(`tickets.jsonファイル: ${TICKETS_FILE}`);
     console.log(`settings.jsonファイル: ${SETTINGS_FILE}`);
-    console.log(`静的ファイルディレクトリ: ${path.join(__dirname, "src")}`);
+    console.log(
+      `静的ファイルディレクトリ: ${path.join(__dirname, "..", "dist")}`,
+    );
     console.log("\n警告: 自己署名証明書を使用しています。");
     console.log(
       "ブラウザで証明書の警告が表示される場合は、例外として承認してください。",
@@ -1512,6 +1417,8 @@ if (USE_HTTPS) {
     console.log(`HTTPサーバーが起動しました: http://localhost:${PORT}`);
     console.log(`tickets.jsonファイル: ${TICKETS_FILE}`);
     console.log(`settings.jsonファイル: ${SETTINGS_FILE}`);
-    console.log(`静的ファイルディレクトリ: ${path.join(__dirname, "src")}`);
+    console.log(
+      `静的ファイルディレクトリ: ${path.join(__dirname, "..", "dist")}`,
+    );
   });
 }
