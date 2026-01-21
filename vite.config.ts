@@ -9,16 +9,15 @@ const __dirname = dirname(__filename);
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  root: "client",
+  root: ".",
   publicDir: "public",
   build: {
-    outDir: "../dist",
+    outDir: "dist",
     emptyOutDir: true,
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./client/src"),
-      "@shared": resolve(__dirname, "./shared"),
+      "@": resolve(__dirname, "./src"),
     },
   },
   server: {

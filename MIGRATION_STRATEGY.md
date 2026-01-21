@@ -1,90 +1,101 @@
-# 🔄 段階的移行ガイド
+# 🔄 React移行完了ガイド
 
-## 現在の状況
+## ✅ 移行完了
 
-プロジェクトは現在、**移行期間中**です：
+プロジェクトは**React標準構造への移行が完了**しました：
 
 ```
-✅ 新しいコード: client/src/     (TypeScript + React)
-⚠️  旧コード:     src/            (Vanilla JavaScript - 削除予定)
-✅ バックエンド:   server.js       (そのまま維持)
+✅ 新しいコード: src/             (TypeScript + React)
+📦 アーカイブ:   archive/          (旧コード保管)
+✅ バックエンド:   server/          (整理済み)
+```
+
+## 📁 新しいディレクトリ構造
+
+```
+NullTasker_React/
+├── src/                          # React アプリケーション
+│   ├── components/              # Reactコンポーネント
+│   ├── contexts/                # Contextプロバイダー
+│   ├── pages/                   # ページコンポーネント
+│   ├── services/                # API通信サービス
+│   ├── styles/                  # スタイルシート
+│   ├── types/                   # TypeScript型定義
+│   ├── App.tsx                  # メインAppコンポーネント
+│   └── main.tsx                 # エントリーポイント
+├── public/                      # 静的ファイル
+├── server/                      # バックエンド
+│   ├── config/                 # JSONデータ
+│   ├── server.js               # Express サーバー
+│   └── server-constants.js     # 定数定義
+├── archive/                     # 旧ファイル保管
+│   ├── old-src/                # 旧フロントエンド
+│   └── old-config/             # 旧設定ファイル
+├── docs/                        # ドキュメント
+├── scripts/                     # ユーティリティスクリプト
+├── ssl/                         # SSL証明書
+├── index.html                   # HTML エントリーポイント
+├── vite.config.ts               # Vite設定
+├── tsconfig.json                # TypeScript設定
+└── package.json                 # 依存関係
+```
+
+## 🚀 開発の始め方
+
+### 1. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 2. 開発サーバーの起動
+
+```bash
+npm run dev
+```
+
+これにより以下が起動します：
+
+- **Vite開発サーバー**: http://localhost:5173 (React HMR付き)
+- **Express APIサーバー**: https://localhost:3443 (または http://localhost:3000)
+
+### 3. ビルド
+
+```bash
+npm run build
+```
+
+ビルドされたファイルは `dist/` ディレクトリに出力されます。
+
+### 4. 本番環境での起動
+
+```bash
+npm start
 ```
 
 ## 📋 旧ファイルの扱い方
 
-### なぜ旧ファイルを残しているのか？
+旧ファイルは `archive/` ディレクトリに保管されています：
 
-1. **参考資料** - 既存のビジネスロジックを確認しながら React 化
-2. **段階的移行** - 一度にすべてを書き換えるリスクを回避
-3. **バックアップ** - 万が一の際の保険
+- **`archive/old-src/`** - 旧フロントエンド（Vanilla JavaScript）
+- **`archive/old-config/`** - 旧設定ファイル
 
-### いつ削除するのか？
-
-各機能の React 実装が完了し、動作確認が取れたら、対応する旧ファイルを削除します。
+これらは参考資料として保管されており、必要に応じて確認できます。
+新しい機能実装時に旧コードのロジックを参照する場合に使用してください。
 
 ## 🗂️ ファイル対応表
 
 詳細は **[OLD_FILES_MAPPING.md](./OLD_FILES_MAPPING.md)** を参照
 
-## 📝 移行作業の進め方
-
-### ステップ 1: 旧ファイルを確認
-
-例: タスク管理機能を実装する場合
-
-```bash
-# 参考にするファイル
-src/scripts/task-manager.js      # ビジネスロジック
-src/scripts/ticket-manager.js    # データ管理
-src/pages/task.html               # UI構造
-src/styles/pages.css              # スタイル
-```
-
-### ステップ 2: 新しいファイルを作成
-
-```bash
-# 新しく作成するファイル
-client/src/pages/TaskPage.tsx           # メインページ
-client/src/services/taskService.ts      # API通信
-client/src/components/TaskList.tsx      # コンポーネント
-client/src/components/TaskForm.tsx      # フォーム
-client/src/styles/task.css              # スタイル
-```
-
-### ステップ 3: 実装 & テスト
-
-1. React コンポーネントとして実装
-2. 既存のロジックを TypeScript で書き直し
-3. 動作確認
-
-### ステップ 4: 旧ファイルの削除
-
-動作確認が完了したら：
-
-```bash
-# 例: タスク管理機能の旧ファイル削除
-rm src/scripts/task-manager.js
-rm src/scripts/ticket-manager.js
-rm src/pages/task.html
-# 対応するスタイルも確認して削除
-```
-
-### ステップ 5: マッピングファイルの更新
-
-`OLD_FILES_MAPPING.md` の対応表を更新：
-
-```markdown
-| `src/scripts/task-manager.js` | `client/src/services/taskService.ts` | ✅ 完了 | ✅ 削除済 |
-```
-
-## 🎯 移行の優先順位
+## 🎯 開発フェーズ
 
 ### Phase 1: 基盤（✅ 完了）
 
-- [x] プロジェクト構造
+- [x] プロジェクト構造のReact化
 - [x] TypeScript 設定
 - [x] 認証システム
 - [x] ルーティング
+- [x] ディレクトリ構造の標準化
 
 ### Phase 2: コアページ（🚧 進行中）
 
@@ -105,73 +116,37 @@ rm src/pages/task.html
 - [ ] ユーザー管理
 - [ ] プロジェクト管理
 
-### Phase 5: クリーンアップ
-
-- [ ] すべての旧ファイルを削除
-- [ ] スタイルの統合
-- [ ] ドキュメント整理
-
 ## ⚠️ 重要なルール
 
 ### ✅ DO（推奨）
 
-- 新しいコードは `client/src/` に書く
-- 旧ファイルは**読み取り専用**として扱う
-- 機能ごとに段階的に移行する
-- 動作確認を十分に行ってから旧ファイルを削除
-- 削除前に git でコミットしておく
+- 新しいコードは `src/` に書く
+- 旧ファイルは `archive/` から参照のみ
+- 機能ごとに段階的に実装する
+- コミット前に動作確認を行う
+- TypeScriptの型を適切に定義する
 
 ### ❌ DON'T（非推奨）
 
-- `src/` ディレクトリのファイルを編集しない
-- すべての旧ファイルを一度に削除しない
-- テストせずに旧ファイルを削除しない
-- バックアップなしで削除しない
-
-## 🔍 チェックリスト
-
-機能を移行する前に：
-
-- [ ] 旧ファイルのロジックを理解した
-- [ ] 必要な型定義を追加した
-- [ ] API 仕様を確認した
-
-機能を移行した後に：
-
-- [ ] 新しいコードが動作することを確認した
-- [ ] すべてのエッジケースをテストした
-- [ ] スタイルが正しく適用されている
-- [ ] エラーハンドリングが適切
-- [ ] コードをコミットした
-- [ ] 旧ファイルを削除した
-- [ ] マッピングファイルを更新した
-
-## 📊 進捗追跡
-
-```bash
-# 残っている旧ファイルの数を確認
-find src/pages -name "*.html" | wc -l
-find src/scripts -name "*.js" | wc -l
-
-# 新しいコンポーネントの数を確認
-find client/src/pages -name "*.tsx" | wc -l
-find client/src/components -name "*.tsx" | wc -l
-```
+- `archive/` ディレクトリのファイルを編集しない
+- 型定義なしでコードを書かない
+- ビルドエラーを無視しない
 
 ## 🎓 学習リソース
 
-移行作業の参考に：
+実装の参考に：
 
-- **既存の成功例**: `client/src/pages/LoginPage.tsx`
-- **認証の実装**: `client/src/contexts/AuthContext.tsx`
-- **API 通信**: `client/src/services/authService.ts`
+- **認証の実装**: [src/contexts/AuthContext.tsx](src/contexts/AuthContext.tsx)
+- **ページコンポーネント**: [src/pages/LoginPage.tsx](src/pages/LoginPage.tsx)
+- **API通信**: [src/services/authService.ts](src/services/authService.ts)
+- **レイアウト**: [src/components/Layout/Layout.tsx](src/components/Layout/Layout.tsx)
 
 ## 📞 サポート
 
 質問や問題がある場合：
 
-1. `IMPLEMENTATION_STATUS.md` で実装状況を確認
-2. `OLD_FILES_MAPPING.md` で対応関係を確認
+1. [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) で実装状況を確認
+2. [OLD_FILES_MAPPING.md](./OLD_FILES_MAPPING.md) で対応関係を確認
 3. Issue を作成して相談
 
 ---
