@@ -4,18 +4,15 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import TicketPage from "./pages/TicketPage";
-import GanttPage from "./pages/GanttPage";
-import CalendarPage from "./pages/CalendarPage";
-import SettingsPage from "./pages/SettingsPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import AdminPage from "./pages/AdminPage";
-import Layout from "./components/Layout/Layout";
+import { AuthProvider, LoginPage, RegisterPage } from "@/features/auth";
+import { TicketPage } from "@/features/tickets";
+import { DashboardPage } from "@/features/projects";
+import { GanttPage } from "@/features/gantt";
+import { CalendarPage } from "@/features/calendar";
+import { SettingsPage } from "@/features/settings";
+import { UserProfilePage } from "@/features/users";
+import { AdminPage } from "@/features/admin";
+import { Layout, ProtectedRoute } from "@/shared/components";
 
 function App() {
   return (
