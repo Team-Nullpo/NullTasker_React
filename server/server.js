@@ -1,3 +1,6 @@
+// 環境変数の読み込み（最初に実行）
+require("dotenv").config();
+
 const express = require("express");
 const https = require("https");
 const fs = require("fs").promises;
@@ -50,6 +53,15 @@ const generateId = (prefix = "item") => {
 // JWT秘密鍵（本番環境では必ず環境変数を使用）
 const JWT_SECRET = process.env.JWT_SECRET || generateSecureSecret();
 
+// 開発環境で環境変数が設定されていない場合の警告
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️  警告: JWT_SECRETが設定されていません！");
+  console.warn("   サーバー再起動時にトークンが無効になります。");
+  console.warn("   .envファイルにJWT_SECRETを設定してください。");
+} else {
+  console.log("✓ JWT_SECRETが環境変数から読み込まれました");
+}
+
 // データベースの初期化
 ensureDatabase();
 console.log("✓ データベースを初期化しました");
@@ -57,9 +69,12 @@ console.log("✓ データベースを初期化しました");
 // 開発環境用の安全なシークレット生成
 function generateSecureSecret() {
   if (process.env.NODE_ENV === "production") {
-    console.error("警告: 本番環境では必ずJWT_SECRET環境変数を設定してください");
+    console.error(
+      "エラー: 本番環境では必ずJWT_SECRET環境変数を設定してください",
+    );
     process.exit(1);
   }
+  console.warn("⚠️  ランダムなJWT_SECRETを生成しました（開発環境のみ）");
   const crypto = require("crypto");
   return crypto.randomBytes(64).toString("hex");
 }

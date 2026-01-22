@@ -14,8 +14,21 @@ export const ticketService = {
    * すべてのチケットを取得
    */
   async getAllTickets(): Promise<TicketsResponse> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data;
+    try {
+      console.log("[ticketService] チケット一覧取得開始");
+      const token = localStorage.getItem("token");
+      console.log("[ticketService] トークン状態:", token ? "あり" : "なし");
+      const response = await apiClient.get<TicketsResponse>("/tasks");
+      console.log("[ticketService] チケット一覧取得成功:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("[ticketService] チケット一覧取得エラー:", {
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data,
+      });
+      throw error;
+    }
   },
 
   /**

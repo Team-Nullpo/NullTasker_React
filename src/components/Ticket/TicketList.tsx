@@ -40,6 +40,7 @@ export const TicketList: React.FC<TicketListProps> = ({
     try {
       setLoading(true);
       setError(null);
+      console.log("[TicketList] チケット取得開始");
       const response = await ticketService.getAllTickets();
       let ticketList = response.tasks;
 
@@ -50,11 +51,26 @@ export const TicketList: React.FC<TicketListProps> = ({
         );
       }
 
+      console.log("[TicketList] チケット取得成功:", ticketList.length);
       setTickets(ticketList);
       setFilteredTickets(ticketList);
-    } catch (err) {
-      setError("チケットの取得に失敗しました");
-      console.error("Failed to fetch tickets:", err);
+    } catch (err: any) {
+      console.error("[TicketList] チケット取得エラー:", err);
+      const status = err.response?.status;
+      let errorMessage = "チケットの取得に失敗しました";
+
+      if (status === 401) {
+        errorMessage = "認証エラー: ログインし直してください";
+      } else if (status === 403) {
+        errorMessage =
+          "アクセス権限がありません。ログインしていることを確認してください。";
+      } else if (status === 404) {
+        errorMessage = "チケットが見つかりません";
+      } else if (err.message) {
+        errorMessage = `エラー: ${err.message}`;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
