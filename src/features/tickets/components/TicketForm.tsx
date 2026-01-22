@@ -145,8 +145,6 @@ export const TicketForm: React.FC<TicketFormProps> = ({
         )}
       </div>
 
-      {error && <div className={styles.error}>{error}</div>}
-
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* プロジェクトID（hidden or disabled） */}
         <div className={styles.formGroup}>
@@ -383,6 +381,8 @@ export const TicketForm: React.FC<TicketFormProps> = ({
             {loading ? "保存中..." : isEditMode ? "更新" : "作成"}
           </button>
         </div>
+
+        {error && <div className={styles.error}>{error}</div>}
       </form>
     </div>
   );
