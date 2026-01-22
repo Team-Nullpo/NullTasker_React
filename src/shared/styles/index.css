@@ -165,3 +165,16 @@ body {
   margin-bottom: 20px;
   border-left: 4px solid var(--success-color);
 }
+
+.modal {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 90%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

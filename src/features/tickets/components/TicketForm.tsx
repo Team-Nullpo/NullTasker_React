@@ -133,7 +133,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} modal`}>
       <div className={styles.header}>
         <h2 className={styles.title}>
           {isEditMode ? "チケット編集" : "新規チケット作成"}
