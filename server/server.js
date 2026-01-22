@@ -21,6 +21,7 @@ const {
   getPrioritiesArray,
   getStatusesArray,
 } = require("./server-constants");
+const { ensureDatabase, TicketOperations, closeDatabase } = require("./db/database");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,10 @@ const generateId = (prefix = "item") => {
 
 // JWT秘密鍵（本番環境では必ず環境変数を使用）
 const JWT_SECRET = process.env.JWT_SECRET || generateSecureSecret();
+
+// データベースの初期化
+ensureDatabase();
+console.log("✓ データベースを初期化しました");
 
 // 開発環境用の安全なシークレット生成
 function generateSecureSecret() {
@@ -1151,34 +1156,18 @@ app.get("/api/tasks", authenticateToken, async (req, res) => {
   try {
     debugLog("タスク取得リクエスト受信:", req.user?.id);
 
-    const data = await fs.readFile(TICKETS_FILE, "utf8");
+    // SQLiteデータベースからタスクを取得
+    const tickets = TicketOperations.getAll();
 
-    // 空ファイルチェック
-    if (!data || data.trim() === "") {
-      console.warn("tickets.jsonが空です。空のタスク配列を返します。");
-      return res.json({ tasks: [], lastUpdated: new Date().toISOString() });
-    }
-
-    const tickets = JSON.parse(data);
-
-    // データ構造の検証
-    if (!tickets.tasks || !Array.isArray(tickets.tasks)) {
-      console.warn("無効なデータ構造。修正して返します。");
-      return res.json({
-        tasks: [],
-        lastUpdated: tickets.lastUpdated || new Date().toISOString(),
-      });
-    }
-
-    debugLog("タスク取得成功:", tickets.tasks.length, "件");
-    res.json(tickets);
+    debugLog("タスク取得成功:", tickets.length, "件");
+    
+    // 既存のフォーマットに合わせてレスポンス
+    res.json({
+      tasks: tickets,
+      lastUpdated: new Date().toISOString()
+    });
   } catch (error) {
     console.error("タスク読み込みエラー:", error.message);
-    // JSONパースエラーの場合は空のデータを返す
-    if (error instanceof SyntaxError) {
-      console.error("JSON解析エラー。空のタスク配列を返します。");
-      return res.json({ tasks: [], lastUpdated: new Date().toISOString() });
-    }
     res.status(500).json({
       success: false,
       error: "タスクの読み込みに失敗しました",
@@ -1191,40 +1180,41 @@ app.post("/api/tasks", authenticateToken, async (req, res) => {
   try {
     const payload = req.body;
 
-    const data = await fs.readFile(TICKETS_FILE, "utf8");
-    const tickets = JSON.parse(data);
-
-    const existingProject = tickets.tasks?.find(
+    // 既存のタスクをチェック
+    const allTickets = TicketOperations.getAll();
+    const existingTask = allTickets.find(
       (task) =>
         task.title === payload.title && task.project === payload.project,
     );
-    if (existingProject) {
+    
+    if (existingTask) {
       return res.status(409).json({ error: "同名のタスクが存在します" });
     }
 
     const newTask = {
       id: generateId("task"),
-      ...payload,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      project: payload.project || '',
+      title: payload.title || 'Untitled',
+      description: payload.description || '',
+      assignee: payload.assignee || '',
+      category: payload.category || '',
+      priority: payload.priority || 'medium',
+      status: payload.status || 'todo',
+      progress: parseInt(payload.progress) || 0,
+      start_date: payload.start_date || payload.startDate || null,
+      due_date: payload.due_date || payload.dueDate || null,
+      estimated_hours: parseFloat(payload.estimated_hours) || parseFloat(payload.estimatedHours) || 0,
+      actual_hours: parseFloat(payload.actual_hours) || parseFloat(payload.actualHours) || 0,
+      tags: Array.isArray(payload.tags) ? payload.tags : [],
+      parent_task: payload.parent_task || payload.parentTask || null,
     };
 
-    if (!tickets.tasks) {
-      tickets.tasks = [];
-    }
+    // SQLiteデータベースに保存
+    const savedTask = TicketOperations.create(newTask);
 
-    tickets.tasks.push(newTask);
-    tickets.lastUpdated = new Date().toISOString();
+    debugLog("タスクが正常に保存されました:", savedTask.id);
 
-    // ファイルに書き込み
-    await fs.writeFile(TICKETS_FILE, JSON.stringify(tickets, null, 2), "utf8");
-
-    debugLog("タスクが正常に保存されました:", {
-      count: tickets.tasks.length,
-      time: new Date().toISOString(),
-    });
-
-    res.status(201).location(`/api/tasks/${newTask.id}`).json(newTask);
+    res.status(201).location(`/api/tasks/${savedTask.id}`).json(savedTask);
   } catch (error) {
     console.error("タスク保存エラー:", error.message);
     res.status(500).json({
@@ -1240,28 +1230,40 @@ app.put("/api/tasks/:ticketId", authenticateToken, async (req, res) => {
     const { ticketId } = req.params;
     const payload = req.body;
 
-    const data = await fs.readFile(TICKETS_FILE, "utf8");
-    const tickets = JSON.parse(data);
-
-    const ticketIndex = tickets.tasks?.findIndex((t) => t.id === ticketId);
-    if (ticketIndex === -1 || !tickets.tasks) {
+    // タスクの存在確認
+    const existingTicket = TicketOperations.getById(ticketId);
+    if (!existingTicket) {
       return res.status(404).json({ error: "チケットが見つかりません" });
     }
 
-    // タスク更新
-    const newTask = {
-      ...tickets.tasks[ticketIndex],
-      ...payload,
-      updatedAt: new Date().toISOString(),
+    // タスク更新データの準備
+    const updateData = {
+      project: payload.project,
+      title: payload.title,
+      description: payload.description,
+      assignee: payload.assignee,
+      category: payload.category,
+      priority: payload.priority,
+      status: payload.status,
+      progress: payload.progress !== undefined ? parseInt(payload.progress) : undefined,
+      start_date: payload.start_date || payload.startDate,
+      due_date: payload.due_date || payload.dueDate,
+      estimated_hours: payload.estimated_hours !== undefined ? parseFloat(payload.estimated_hours) : 
+                       payload.estimatedHours !== undefined ? parseFloat(payload.estimatedHours) : undefined,
+      actual_hours: payload.actual_hours !== undefined ? parseFloat(payload.actual_hours) : 
+                    payload.actualHours !== undefined ? parseFloat(payload.actualHours) : undefined,
+      tags: Array.isArray(payload.tags) ? payload.tags : undefined,
+      parent_task: payload.parent_task || payload.parentTask,
     };
 
-    tickets.tasks[ticketIndex] = newTask;
+    // SQLiteデータベースで更新
+    const updatedTask = TicketOperations.update(ticketId, updateData);
 
-    tickets.lastUpdated = new Date().toISOString();
+    if (!updatedTask) {
+      return res.status(404).json({ error: "チケットの更新に失敗しました" });
+    }
 
-    await fs.writeFile(TICKETS_FILE, JSON.stringify(tickets, null, 2));
-
-    res.status(200).json(newTask);
+    res.status(200).json(updatedTask);
   } catch (error) {
     console.error("チケット更新エラー:", error);
     res.status(500).json({ error: "チケットの更新に失敗しました" });
@@ -1273,20 +1275,12 @@ app.delete("/api/tasks/:ticketId", authenticateToken, async (req, res) => {
   try {
     const { ticketId } = req.params;
 
-    const data = await fs.readFile(TICKETS_FILE, "utf8");
-    const tickets = JSON.parse(data);
+    // タスクの存在確認と削除
+    const deleted = TicketOperations.delete(ticketId);
 
-    const ticketIndex = tickets.tasks?.findIndex((t) => t.id === ticketId);
-    if (ticketIndex === -1 || !tickets.tasks) {
+    if (!deleted) {
       return res.status(404).json({ error: "チケットが見つかりません" });
     }
-
-    // チケット削除
-    tickets.tasks.splice(ticketIndex, 1);
-
-    tickets.lastUpdated = new Date().toISOString();
-
-    await fs.writeFile(TICKETS_FILE, JSON.stringify(tickets, null, 2));
 
     res.status(204).end();
   } catch (error) {
@@ -1298,13 +1292,27 @@ app.delete("/api/tasks/:ticketId", authenticateToken, async (req, res) => {
 // バックアップファイルの作成
 app.post("/api/backup", authenticateToken, async (req, res) => {
   try {
-    const data = await fs.readFile(TICKETS_FILE, "utf8");
+    // SQLiteデータベースからすべてのチケットを取得
+    const tickets = TicketOperations.getAll();
+    
+    // JSONフォーマットでバックアップ
+    const backupData = {
+      tasks: tickets,
+      lastUpdated: new Date().toISOString()
+    };
+    
     const backupFile = path.join(
       __dirname,
       "config",
-      `backup_${Date.now()}.json`,
+      "backups",
+      `backup_tickets_${Date.now()}.json`,
     );
-    await fs.writeFile(backupFile, data, "utf8");
+    
+    // バックアップディレクトリが存在しない場合は作成
+    const backupDir = path.dirname(backupFile);
+    await fs.mkdir(backupDir, { recursive: true });
+    
+    await fs.writeFile(backupFile, JSON.stringify(backupData, null, 2), "utf8");
 
     res.json({ success: true, backupFile: path.basename(backupFile) });
   } catch (error) {
@@ -1415,10 +1423,23 @@ if (USE_HTTPS) {
   // HTTPサーバーを起動（HTTPSを無効にした場合）
   app.listen(PORT, () => {
     console.log(`HTTPサーバーが起動しました: http://localhost:${PORT}`);
-    console.log(`tickets.jsonファイル: ${TICKETS_FILE}`);
+    console.log(`データベースファイル: ${path.join(__dirname, 'db', 'nulltasker.db')}`);
     console.log(`settings.jsonファイル: ${SETTINGS_FILE}`);
     console.log(
       `静的ファイルディレクトリ: ${path.join(__dirname, "..", "dist")}`,
     );
   });
 }
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\nサーバーをシャットダウンしています...');
+  closeDatabase();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\nサーバーをシャットダウンしています...');
+  closeDatabase();
+  process.exit(0);
+});
