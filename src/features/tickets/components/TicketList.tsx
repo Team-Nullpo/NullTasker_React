@@ -7,7 +7,7 @@ import {
   faSync,
 } from "@fortawesome/free-solid-svg-icons";
 import TicketCard from "./TicketCard";
-import ticketService from "../services/ticketService";
+import ticketService from "../../../shared/services/ticketService";
 import type { Ticket } from "@/shared/types";
 import styles from "./TicketList.module.css";
 

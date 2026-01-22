@@ -6,7 +6,7 @@ import {
   faPlus,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import ticketService from "../services/ticketService";
+import ticketService from "../../../shared/services/ticketService";
 import type { Ticket, TicketFormData } from "@/shared/types";
 import styles from "./TicketForm.module.css";
 
