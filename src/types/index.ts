@@ -1,5 +1,5 @@
 // ユーザー関連の型定義
-export type UserRole = 'system_admin' | 'project_admin' | 'user';
+export type UserRole = "system_admin" | "project_admin" | "user";
 
 export interface User {
   id: string;
@@ -47,15 +47,19 @@ export interface RegisterRequest {
 export interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
-  login: (loginId: string, password: string, rememberMe?: boolean) => Promise<void>;
+  login: (
+    loginId: string,
+    password: string,
+    rememberMe?: boolean,
+  ) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
 // タスク関連の型定義
-export type TaskPriority = 'low' | 'medium' | 'high';
-export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
+export type TaskPriority = "low" | "medium" | "high";
+export type TaskStatus = "todo" | "in_progress" | "review" | "done";
 
 export interface Task {
   id: string;
@@ -76,6 +80,49 @@ export interface Task {
 export interface TasksData {
   tasks: Task[];
   lastUpdated: string;
+}
+
+// チケット関連の型定義（データベーススキーマに基づく）
+export interface Ticket {
+  id: string;
+  project: string;
+  title: string;
+  description: string;
+  assignee: string;
+  category: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  progress: number;
+  start_date: string | null;
+  due_date: string | null;
+  estimated_hours: number;
+  actual_hours: number;
+  tags: string[];
+  parent_task: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketsResponse {
+  tasks: Ticket[];
+  lastUpdated: string;
+}
+
+export interface TicketFormData {
+  project: string;
+  title: string;
+  description?: string;
+  assignee?: string;
+  category?: string;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+  progress?: number;
+  start_date?: string | null;
+  due_date?: string | null;
+  estimated_hours?: number;
+  actual_hours?: number;
+  tags?: string[];
+  parent_task?: string | null;
 }
 
 // プロジェクト関連の型定義
@@ -108,7 +155,7 @@ export interface ProjectsData {
 export interface AppSettings {
   appName: string;
   version: string;
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   language: string;
   timezone: string;
   features: {

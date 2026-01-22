@@ -9,7 +9,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
-import TaskPage from "./pages/TaskPage";
+import TicketPage from "./pages/TicketPage";
 import GanttPage from "./pages/GanttPage";
 import CalendarPage from "./pages/CalendarPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -38,7 +38,7 @@ function App() {
             path="/tasks"
             element={
               <ProtectedRoute>
-                <Layout>{<TaskPage />}</Layout>
+                <Layout>{<TicketPage />}</Layout>
               </ProtectedRoute>
             }
           />

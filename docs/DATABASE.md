@@ -8,25 +8,25 @@ NullTaskerのチケット管理システムは、SQLiteデータベースを使�
 
 ### ticketsテーブル
 
-| カラム名 | 型 | 説明 |
-|---------|-----|------|
-| id | TEXT | 主キー（一意のチケットID） |
-| project | TEXT | プロジェクトID |
-| title | TEXT | チケットタイトル |
-| description | TEXT | チケットの詳細説明 |
-| assignee | TEXT | 担当者のユーザーID |
-| category | TEXT | カテゴリ |
-| priority | TEXT | 優先度（low, medium, high） |
-| status | TEXT | ステータス（todo, in_progress, done） |
-| progress | INTEGER | 進捗率（0-100） |
-| start_date | TEXT | 開始日（ISO 8601形式） |
-| due_date | TEXT | 期限日（ISO 8601形式） |
-| estimated_hours | REAL | 見積工数（時間） |
-| actual_hours | REAL | 実績工数（時間） |
-| tags | TEXT | タグ（JSON配列形式） |
-| parent_task | TEXT | 親タスクID（外部キー） |
-| created_at | TEXT | 作成日時（自動設定） |
-| updated_at | TEXT | 更新日時（自動更新） |
+| カラム名        | 型      | 説明                                  |
+| --------------- | ------- | ------------------------------------- |
+| id              | TEXT    | 主キー（一意のチケットID）            |
+| project         | TEXT    | プロジェクトID                        |
+| title           | TEXT    | チケットタイトル                      |
+| description     | TEXT    | チケットの詳細説明                    |
+| assignee        | TEXT    | 担当者のユーザーID                    |
+| category        | TEXT    | カテゴリ                              |
+| priority        | TEXT    | 優先度（low, medium, high）           |
+| status          | TEXT    | ステータス（todo, in_progress, done） |
+| progress        | INTEGER | 進捗率（0-100）                       |
+| start_date      | TEXT    | 開始日（ISO 8601形式）                |
+| due_date        | TEXT    | 期限日（ISO 8601形式）                |
+| estimated_hours | REAL    | 見積工数（時間）                      |
+| actual_hours    | REAL    | 実績工数（時間）                      |
+| tags            | TEXT    | タグ（JSON配列形式）                  |
+| parent_task     | TEXT    | 親タスクID（外部キー）                |
+| created_at      | TEXT    | 作成日時（自動設定）                  |
+| updated_at      | TEXT    | 更新日時（自動更新）                  |
 
 ## セットアップ
 
@@ -37,6 +37,7 @@ npm run db:init
 ```
 
 このコマンドは以下を実行します：
+
 - データベースファイル `server/db/nulltasker.db` を作成
 - `tickets` テーブルを作成
 - インデックスを作成（パフォーマンス向上）
@@ -51,6 +52,7 @@ npm run db:migrate
 ```
 
 このコマンドは：
+
 - `server/config/tickets.json` を読み込み
 - データをSQLiteデータベースに移行
 - 重複チェックを実行
@@ -65,6 +67,7 @@ npm run db:export
 ```
 
 このコマンドは：
+
 - データベースからすべてのチケットを取得
 - `server/config/tickets-export.json` にエクスポート
 - JSONフォーマットで保存
@@ -87,6 +90,7 @@ npm run start:http
 ## APIエンドポイント
 
 ### チケット取得
+
 ```
 GET /api/tasks
 ```
@@ -94,6 +98,7 @@ GET /api/tasks
 全チケットを取得します。
 
 ### チケット作成
+
 ```
 POST /api/tasks
 Content-Type: application/json
@@ -113,6 +118,7 @@ Content-Type: application/json
 ```
 
 ### チケット更新
+
 ```
 PUT /api/tasks/:ticketId
 Content-Type: application/json
@@ -125,11 +131,13 @@ Content-Type: application/json
 ```
 
 ### チケット削除
+
 ```
 DELETE /api/tasks/:ticketId
 ```
 
 ### バックアップ作成
+
 ```
 POST /api/backup
 ```

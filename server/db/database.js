@@ -1,6 +1,6 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const { initializeDatabase } = require('./init');
+const Database = require("better-sqlite3");
+const path = require("path");
+const { initializeDatabase } = require("./init");
 
 // データベースインスタンス
 let db = null;
@@ -10,10 +10,10 @@ let db = null;
  */
 function getDatabase() {
   if (!db) {
-    const dbPath = path.join(__dirname, 'nulltasker.db');
+    const dbPath = path.join(__dirname, "nulltasker.db");
     db = new Database(dbPath, { verbose: console.log });
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+    db.pragma("journal_mode = WAL");
+    db.pragma("foreign_keys = ON");
   }
   return db;
 }
@@ -22,16 +22,16 @@ function getDatabase() {
  * データベースを初期化（必要な場合のみ）
  */
 function ensureDatabase() {
-  const dbPath = path.join(__dirname, 'nulltasker.db');
-  const fs = require('fs');
-  
+  const dbPath = path.join(__dirname, "nulltasker.db");
+  const fs = require("fs");
+
   if (!fs.existsSync(dbPath)) {
-    console.log('データベースファイルが存在しません。新規作成します...');
+    console.log("データベースファイルが存在しません。新規作成します...");
     db = initializeDatabase();
   } else {
     db = getDatabase();
   }
-  
+
   return db;
 }
 
@@ -44,16 +44,16 @@ const TicketOperations = {
    */
   getAll() {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets ORDER BY created_at DESC');
+    const stmt = db.prepare("SELECT * FROM tickets ORDER BY created_at DESC");
     const tickets = stmt.all();
-    
+
     // tagsをJSON配列に変換
-    return tickets.map(ticket => ({
+    return tickets.map((ticket) => ({
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     }));
   },
 
@@ -62,17 +62,17 @@ const TicketOperations = {
    */
   getById(id) {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets WHERE id = ?');
+    const stmt = db.prepare("SELECT * FROM tickets WHERE id = ?");
     const ticket = stmt.get(id);
-    
+
     if (!ticket) return null;
-    
+
     return {
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     };
   },
 
@@ -81,15 +81,17 @@ const TicketOperations = {
    */
   getByProject(projectId) {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets WHERE project = ? ORDER BY created_at DESC');
+    const stmt = db.prepare(
+      "SELECT * FROM tickets WHERE project = ? ORDER BY created_at DESC",
+    );
     const tickets = stmt.all(projectId);
-    
-    return tickets.map(ticket => ({
+
+    return tickets.map((ticket) => ({
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     }));
   },
 
@@ -98,15 +100,17 @@ const TicketOperations = {
    */
   getByAssignee(assignee) {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets WHERE assignee = ? ORDER BY created_at DESC');
+    const stmt = db.prepare(
+      "SELECT * FROM tickets WHERE assignee = ? ORDER BY created_at DESC",
+    );
     const tickets = stmt.all(assignee);
-    
-    return tickets.map(ticket => ({
+
+    return tickets.map((ticket) => ({
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     }));
   },
 
@@ -115,23 +119,23 @@ const TicketOperations = {
    */
   create(ticketData) {
     const db = getDatabase();
-    
+
     const {
       id,
       project,
       title,
-      description = '',
-      assignee = '',
-      category = '',
-      priority = 'medium',
-      status = 'todo',
+      description = "",
+      assignee = "",
+      category = "",
+      priority = "medium",
+      status = "todo",
       progress = 0,
       start_date = null,
       due_date = null,
       estimated_hours = 0,
       actual_hours = 0,
       tags = [],
-      parent_task = null
+      parent_task = null,
     } = ticketData;
 
     const stmt = db.prepare(`
@@ -157,7 +161,7 @@ const TicketOperations = {
       estimated_hours,
       actual_hours,
       JSON.stringify(tags),
-      parent_task
+      parent_task,
     );
 
     return this.getById(id);
@@ -168,7 +172,7 @@ const TicketOperations = {
    */
   update(id, ticketData) {
     const db = getDatabase();
-    
+
     const {
       project,
       title,
@@ -183,7 +187,7 @@ const TicketOperations = {
       estimated_hours,
       actual_hours,
       tags,
-      parent_task
+      parent_task,
     } = ticketData;
 
     const stmt = db.prepare(`
@@ -221,7 +225,7 @@ const TicketOperations = {
       actual_hours,
       tags ? JSON.stringify(tags) : null,
       parent_task,
-      id
+      id,
     );
 
     if (result.changes === 0) {
@@ -236,12 +240,14 @@ const TicketOperations = {
    */
   delete(id) {
     const db = getDatabase();
-    
+
     // 親タスクとして参照されている場合、子タスクのparent_taskをNULLに設定
-    const updateChildren = db.prepare('UPDATE tickets SET parent_task = NULL WHERE parent_task = ?');
+    const updateChildren = db.prepare(
+      "UPDATE tickets SET parent_task = NULL WHERE parent_task = ?",
+    );
     updateChildren.run(id);
-    
-    const stmt = db.prepare('DELETE FROM tickets WHERE id = ?');
+
+    const stmt = db.prepare("DELETE FROM tickets WHERE id = ?");
     const result = stmt.run(id);
 
     return result.changes > 0;
@@ -252,15 +258,17 @@ const TicketOperations = {
    */
   getChildren(parentId) {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets WHERE parent_task = ? ORDER BY created_at ASC');
+    const stmt = db.prepare(
+      "SELECT * FROM tickets WHERE parent_task = ? ORDER BY created_at ASC",
+    );
     const tickets = stmt.all(parentId);
-    
-    return tickets.map(ticket => ({
+
+    return tickets.map((ticket) => ({
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     }));
   },
 
@@ -269,15 +277,17 @@ const TicketOperations = {
    */
   getByStatus(status) {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets WHERE status = ? ORDER BY created_at DESC');
+    const stmt = db.prepare(
+      "SELECT * FROM tickets WHERE status = ? ORDER BY created_at DESC",
+    );
     const tickets = stmt.all(status);
-    
-    return tickets.map(ticket => ({
+
+    return tickets.map((ticket) => ({
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     }));
   },
 
@@ -286,17 +296,19 @@ const TicketOperations = {
    */
   getByPriority(priority) {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM tickets WHERE priority = ? ORDER BY created_at DESC');
+    const stmt = db.prepare(
+      "SELECT * FROM tickets WHERE priority = ? ORDER BY created_at DESC",
+    );
     const tickets = stmt.all(priority);
-    
-    return tickets.map(ticket => ({
+
+    return tickets.map((ticket) => ({
       ...ticket,
       tags: ticket.tags ? JSON.parse(ticket.tags) : [],
       progress: parseInt(ticket.progress) || 0,
       estimated_hours: parseFloat(ticket.estimated_hours) || 0,
-      actual_hours: parseFloat(ticket.actual_hours) || 0
+      actual_hours: parseFloat(ticket.actual_hours) || 0,
     }));
-  }
+  },
 };
 
 /**
@@ -306,7 +318,7 @@ function closeDatabase() {
   if (db) {
     db.close();
     db = null;
-    console.log('データベース接続を閉じました');
+    console.log("データベース接続を閉じました");
   }
 }
 
@@ -314,5 +326,5 @@ module.exports = {
   getDatabase,
   ensureDatabase,
   TicketOperations,
-  closeDatabase
+  closeDatabase,
 };

@@ -21,7 +21,11 @@ const {
   getPrioritiesArray,
   getStatusesArray,
 } = require("./server-constants");
-const { ensureDatabase, TicketOperations, closeDatabase } = require("./db/database");
+const {
+  ensureDatabase,
+  TicketOperations,
+  closeDatabase,
+} = require("./db/database");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1160,11 +1164,11 @@ app.get("/api/tasks", authenticateToken, async (req, res) => {
     const tickets = TicketOperations.getAll();
 
     debugLog("タスク取得成功:", tickets.length, "件");
-    
+
     // 既存のフォーマットに合わせてレスポンス
     res.json({
       tasks: tickets,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
     console.error("タスク読み込みエラー:", error.message);
@@ -1186,25 +1190,31 @@ app.post("/api/tasks", authenticateToken, async (req, res) => {
       (task) =>
         task.title === payload.title && task.project === payload.project,
     );
-    
+
     if (existingTask) {
       return res.status(409).json({ error: "同名のタスクが存在します" });
     }
 
     const newTask = {
       id: generateId("task"),
-      project: payload.project || '',
-      title: payload.title || 'Untitled',
-      description: payload.description || '',
-      assignee: payload.assignee || '',
-      category: payload.category || '',
-      priority: payload.priority || 'medium',
-      status: payload.status || 'todo',
+      project: payload.project || "",
+      title: payload.title || "Untitled",
+      description: payload.description || "",
+      assignee: payload.assignee || "",
+      category: payload.category || "",
+      priority: payload.priority || "medium",
+      status: payload.status || "todo",
       progress: parseInt(payload.progress) || 0,
       start_date: payload.start_date || payload.startDate || null,
       due_date: payload.due_date || payload.dueDate || null,
-      estimated_hours: parseFloat(payload.estimated_hours) || parseFloat(payload.estimatedHours) || 0,
-      actual_hours: parseFloat(payload.actual_hours) || parseFloat(payload.actualHours) || 0,
+      estimated_hours:
+        parseFloat(payload.estimated_hours) ||
+        parseFloat(payload.estimatedHours) ||
+        0,
+      actual_hours:
+        parseFloat(payload.actual_hours) ||
+        parseFloat(payload.actualHours) ||
+        0,
       tags: Array.isArray(payload.tags) ? payload.tags : [],
       parent_task: payload.parent_task || payload.parentTask || null,
     };
@@ -1245,13 +1255,22 @@ app.put("/api/tasks/:ticketId", authenticateToken, async (req, res) => {
       category: payload.category,
       priority: payload.priority,
       status: payload.status,
-      progress: payload.progress !== undefined ? parseInt(payload.progress) : undefined,
+      progress:
+        payload.progress !== undefined ? parseInt(payload.progress) : undefined,
       start_date: payload.start_date || payload.startDate,
       due_date: payload.due_date || payload.dueDate,
-      estimated_hours: payload.estimated_hours !== undefined ? parseFloat(payload.estimated_hours) : 
-                       payload.estimatedHours !== undefined ? parseFloat(payload.estimatedHours) : undefined,
-      actual_hours: payload.actual_hours !== undefined ? parseFloat(payload.actual_hours) : 
-                    payload.actualHours !== undefined ? parseFloat(payload.actualHours) : undefined,
+      estimated_hours:
+        payload.estimated_hours !== undefined
+          ? parseFloat(payload.estimated_hours)
+          : payload.estimatedHours !== undefined
+            ? parseFloat(payload.estimatedHours)
+            : undefined,
+      actual_hours:
+        payload.actual_hours !== undefined
+          ? parseFloat(payload.actual_hours)
+          : payload.actualHours !== undefined
+            ? parseFloat(payload.actualHours)
+            : undefined,
       tags: Array.isArray(payload.tags) ? payload.tags : undefined,
       parent_task: payload.parent_task || payload.parentTask,
     };
@@ -1294,24 +1313,24 @@ app.post("/api/backup", authenticateToken, async (req, res) => {
   try {
     // SQLiteデータベースからすべてのチケットを取得
     const tickets = TicketOperations.getAll();
-    
+
     // JSONフォーマットでバックアップ
     const backupData = {
       tasks: tickets,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
-    
+
     const backupFile = path.join(
       __dirname,
       "config",
       "backups",
       `backup_tickets_${Date.now()}.json`,
     );
-    
+
     // バックアップディレクトリが存在しない場合は作成
     const backupDir = path.dirname(backupFile);
     await fs.mkdir(backupDir, { recursive: true });
-    
+
     await fs.writeFile(backupFile, JSON.stringify(backupData, null, 2), "utf8");
 
     res.json({ success: true, backupFile: path.basename(backupFile) });
@@ -1423,7 +1442,9 @@ if (USE_HTTPS) {
   // HTTPサーバーを起動（HTTPSを無効にした場合）
   app.listen(PORT, () => {
     console.log(`HTTPサーバーが起動しました: http://localhost:${PORT}`);
-    console.log(`データベースファイル: ${path.join(__dirname, 'db', 'nulltasker.db')}`);
+    console.log(
+      `データベースファイル: ${path.join(__dirname, "db", "nulltasker.db")}`,
+    );
     console.log(`settings.jsonファイル: ${SETTINGS_FILE}`);
     console.log(
       `静的ファイルディレクトリ: ${path.join(__dirname, "..", "dist")}`,
@@ -1432,14 +1453,14 @@ if (USE_HTTPS) {
 }
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\nサーバーをシャットダウンしています...');
+process.on("SIGINT", () => {
+  console.log("\nサーバーをシャットダウンしています...");
   closeDatabase();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
-  console.log('\nサーバーをシャットダウンしています...');
+process.on("SIGTERM", () => {
+  console.log("\nサーバーをシャットダウンしています...");
   closeDatabase();
   process.exit(0);
 });

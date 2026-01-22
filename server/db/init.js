@@ -1,6 +1,6 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const Database = require("better-sqlite3");
+const path = require("path");
+const fs = require("fs");
 
 /**
  * データベースを初期化し、必要なテーブルを作成します
@@ -13,18 +13,18 @@ function initializeDatabase() {
   }
 
   // データベースファイルのパス
-  const dbPath = path.join(dbDir, 'nulltasker.db');
-  
+  const dbPath = path.join(dbDir, "nulltasker.db");
+
   // データベース接続を作成
   const db = new Database(dbPath, { verbose: console.log });
-  
-  // WALモードを有効化（パフォーマンス向上）
-  db.pragma('journal_mode = WAL');
-  
-  // 外部キー制約を有効化
-  db.pragma('foreign_keys = ON');
 
-  console.log('データベースを初期化しています...');
+  // WALモードを有効化（パフォーマンス向上）
+  db.pragma("journal_mode = WAL");
+
+  // 外部キー制約を有効化
+  db.pragma("foreign_keys = ON");
+
+  console.log("データベースを初期化しています...");
 
   // ticketsテーブルの作成
   const createTicketsTable = `
@@ -51,7 +51,7 @@ function initializeDatabase() {
   `;
 
   db.exec(createTicketsTable);
-  console.log('✓ ticketsテーブルを作成しました');
+  console.log("✓ ticketsテーブルを作成しました");
 
   // インデックスの作成（パフォーマンス向上のため）
   const createIndexes = `
@@ -65,7 +65,7 @@ function initializeDatabase() {
   `;
 
   db.exec(createIndexes);
-  console.log('✓ インデックスを作成しました');
+  console.log("✓ インデックスを作成しました");
 
   // トリガー: updated_at を自動更新
   const createUpdateTrigger = `
@@ -78,10 +78,10 @@ function initializeDatabase() {
   `;
 
   db.exec(createUpdateTrigger);
-  console.log('✓ トリガーを作成しました');
+  console.log("✓ トリガーを作成しました");
 
-  console.log('データベースの初期化が完了しました！');
-  
+  console.log("データベースの初期化が完了しました！");
+
   return db;
 }
 
@@ -90,9 +90,9 @@ if (require.main === module) {
   try {
     const db = initializeDatabase();
     db.close();
-    console.log('データベース接続を閉じました');
+    console.log("データベース接続を閉じました");
   } catch (error) {
-    console.error('データベース初期化中にエラーが発生しました:', error);
+    console.error("データベース初期化中にエラーが発生しました:", error);
     process.exit(1);
   }
 }
