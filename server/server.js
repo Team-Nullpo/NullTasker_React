@@ -880,10 +880,6 @@ app.post(
         lastUpdated: new Date().toISOString(),
       };
 
-      if (!projects) {
-        projects = [];
-      }
-
       ProjectOperations.add(newProject);
       // オーナーのプロジェクトリストに追加
       const ownerIndex = users.users.findIndex((u) => u.id === owner);
