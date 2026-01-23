@@ -312,6 +312,206 @@ const TicketOperations = {
 };
 
 /**
+ * プロジェクトの操作
+ */
+const ProjectOperations = {
+  /**
+   * すべてのプロジェクトを取得
+   */
+  getAll() {
+    const db = getDatabase();
+    const stmt = db.prepare("SELECT * FROM projects ORDER BY created_at DESC");
+    const projects = stmt.all();
+
+    // JSON文字列を配列/オブジェクトに変換
+    return projects.map((project) => ({
+      ...project,
+      members: project.members ? JSON.parse(project.members) : [],
+      admins: project.admins ? JSON.parse(project.admins) : [],
+      settings: project.settings ? JSON.parse(project.settings) : {},
+    }));
+  },
+
+  /**
+   * IDでプロジェクトを取得
+   */
+  getById(id) {
+    const db = getDatabase();
+    const stmt = db.prepare("SELECT * FROM projects WHERE id = ?");
+    const project = stmt.get(id);
+
+    if (!project) return null;
+
+    return {
+      ...project,
+      members: project.members ? JSON.parse(project.members) : [],
+      admins: project.admins ? JSON.parse(project.admins) : [],
+      settings: project.settings ? JSON.parse(project.settings) : {},
+    };
+  },
+
+  /**
+   * オーナーでプロジェクトを取得
+   */
+  getByOwner(owner) {
+    const db = getDatabase();
+    const stmt = db.prepare(
+      "SELECT * FROM projects WHERE owner = ? ORDER BY created_at DESC",
+    );
+    const projects = stmt.all(owner);
+
+    return projects.map((project) => ({
+      ...project,
+      members: project.members ? JSON.parse(project.members) : [],
+      admins: project.admins ? JSON.parse(project.admins) : [],
+      settings: project.settings ? JSON.parse(project.settings) : {},
+    }));
+  },
+
+  /**
+   * プロジェクトを作成
+   */
+  create(projectData) {
+    const db = getDatabase();
+
+    const {
+      id,
+      name,
+      description = "",
+      owner,
+      members = [],
+      admins = [],
+      settings = {},
+    } = projectData;
+
+    const stmt = db.prepare(`
+      INSERT INTO projects (
+        id, name, description, owner, members, admins, settings
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      id,
+      name,
+      description,
+      owner,
+      JSON.stringify(members),
+      JSON.stringify(admins),
+      JSON.stringify(settings),
+    );
+
+    return this.getById(id);
+  },
+
+  /**
+   * プロジェクトを更新
+   */
+  update(id, projectData) {
+    const db = getDatabase();
+
+    const { name, description, owner, members, admins, settings } = projectData;
+
+    const stmt = db.prepare(`
+      UPDATE projects SET
+        name = COALESCE(?, name),
+        description = COALESCE(?, description),
+        owner = COALESCE(?, owner),
+        members = COALESCE(?, members),
+        admins = COALESCE(?, admins),
+        settings = COALESCE(?, settings),
+        last_updated = datetime('now')
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(
+      name,
+      description,
+      owner,
+      members ? JSON.stringify(members) : null,
+      admins ? JSON.stringify(admins) : null,
+      settings ? JSON.stringify(settings) : null,
+      id,
+    );
+
+    if (result.changes === 0) {
+      return null;
+    }
+
+    return this.getById(id);
+  },
+
+  /**
+   * プロジェクトを削除
+   */
+  delete(id) {
+    const db = getDatabase();
+
+    // 関連するチケットも削除
+    const deleteTickets = db.prepare("DELETE FROM tickets WHERE project = ?");
+    deleteTickets.run(id);
+
+    const stmt = db.prepare("DELETE FROM projects WHERE id = ?");
+    const result = stmt.run(id);
+
+    return result.changes > 0;
+  },
+
+  /**
+   * メンバーを追加
+   */
+  addMember(projectId, userId) {
+    const project = this.getById(projectId);
+    if (!project) return null;
+
+    const members = project.members || [];
+    if (!members.includes(userId)) {
+      members.push(userId);
+      return this.update(projectId, { members });
+    }
+
+    return project;
+  },
+
+  /**
+   * メンバーを削除
+   */
+  removeMember(projectId, userId) {
+    const project = this.getById(projectId);
+    if (!project) return null;
+
+    const members = (project.members || []).filter((id) => id !== userId);
+    return this.update(projectId, { members });
+  },
+
+  /**
+   * 管理者を追加
+   */
+  addAdmin(projectId, userId) {
+    const project = this.getById(projectId);
+    if (!project) return null;
+
+    const admins = project.admins || [];
+    if (!admins.includes(userId)) {
+      admins.push(userId);
+      return this.update(projectId, { admins });
+    }
+
+    return project;
+  },
+
+  /**
+   * 管理者を削除
+   */
+  removeAdmin(projectId, userId) {
+    const project = this.getById(projectId);
+    if (!project) return null;
+
+    const admins = (project.admins || []).filter((id) => id !== userId);
+    return this.update(projectId, { admins });
+  },
+};
+
+/**
  * データベースを閉じる
  */
 function closeDatabase() {
@@ -326,5 +526,6 @@ module.exports = {
   getDatabase,
   ensureDatabase,
   TicketOperations,
+  ProjectOperations,
   closeDatabase,
 };

@@ -27,6 +27,7 @@ const {
 const {
   ensureDatabase,
   TicketOperations,
+  ProjectOperations,
   closeDatabase,
 } = require("./db/database");
 
@@ -826,9 +827,8 @@ app.get(
   requireSystemAdmin,
   async (req, res) => {
     try {
-      const data = await fs.readFile(PROJECTS_FILE, "utf8");
-      const projects = JSON.parse(data);
-      res.status(200).json(projects.projects);
+      const projects = ProjectOperations.getAll();
+      res.status(200).json(projects);
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
       res.status(500).json({ error: "プロジェクトデータ取得に失敗しました" });
@@ -851,8 +851,7 @@ app.post(
 
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const users = JSON.parse(userData);
-      const projectData = await fs.readFile(PROJECTS_FILE, "utf8");
-      const projects = JSON.parse(projectData);
+      const projects = ProjectOperations.getAll();
 
       // オーナーの存在チェック
       const ownerUser = users.users.find((u) => u.id === owner);
@@ -881,12 +880,11 @@ app.post(
         lastUpdated: new Date().toISOString(),
       };
 
-      if (!projects.projects) {
-        projects.projects = [];
+      if (!projects) {
+        projects = [];
       }
 
-      projects.projects.push(newProject);
-
+      ProjectOperations.add(newProject);
       // オーナーのプロジェクトリストに追加
       const ownerIndex = users.users.findIndex((u) => u.id === owner);
       if (ownerIndex !== -1) {
@@ -899,10 +897,8 @@ app.post(
       }
 
       users.lastUpdated = new Date().toISOString();
-      projects.lastUpdated = new Date().toISOString();
 
       await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
 
       res
         .status(201)
@@ -931,13 +927,10 @@ app.put(
 
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const users = JSON.parse(userData);
-      const projectData = await fs.readFile(PROJECTS_FILE, "utf8");
-      const projects = JSON.parse(projectData);
+      const projects = ProjectOperations.getAll();
 
-      const projectIndex = projects.projects?.findIndex(
-        (p) => p.id === projectId,
-      );
-      if (projectIndex === -1 || !projects.projects) {
+      const projectIndex = projects?.findIndex((p) => p.id === projectId);
+      if (projectIndex === -1 || !projects) {
         return res.status(404).json({ error: "プロジェクトが見つかりません" });
       }
 
@@ -951,18 +944,13 @@ app.put(
 
       // プロジェクト更新
       const newProject = {
-        ...projects.projects[projectIndex],
+        ...projects[projectIndex],
         name: name,
         description: description || "",
         owner: owner,
         updatedAt: new Date().toISOString(),
       };
-      projects.projects[projectIndex] = newProject;
-
-      projects.lastUpdated = new Date().toISOString();
-
-      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
-
+      projects.update(projectId, newProject);
       res.status(200).json(newProject);
     } catch (error) {
       console.error("プロジェクト更新エラー:", error);
@@ -989,18 +977,15 @@ app.delete(
 
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const users = JSON.parse(userData);
-      const projectData = await fs.readFile(PROJECTS_FILE, "utf8");
-      const projects = JSON.parse(projectData);
+      const projects = ProjectOperations.getAll();
 
-      const projectIndex = projects.projects?.findIndex(
-        (p) => p.id === projectId,
-      );
-      if (projectIndex === -1 || !projects.projects) {
+      const projectIndex = projects?.findIndex((p) => p.id === projectId);
+      if (projectIndex === -1 || !projects) {
         return res.status(404).json({ error: "プロジェクトが見つかりません" });
       }
 
       // プロジェクト削除
-      projects.projects.splice(projectIndex, 1);
+      ProjectOperations.delete(projectId);
 
       // 全ユーザーのプロジェクトリストから削除
       users.users.forEach((user) => {
@@ -1010,10 +995,8 @@ app.delete(
       });
 
       users.lastUpdated = new Date().toISOString();
-      projects.lastUpdated = new Date().toISOString();
 
       await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
 
       res.status(204).end();
     } catch (error) {
@@ -1358,12 +1341,13 @@ app.post("/api/backup", authenticateToken, async (req, res) => {
 // プロジェクトデータ取得
 app.get("/api/projects", authenticateToken, async (req, res) => {
   try {
-    const data = await fs.readFile(PROJECTS_FILE, "utf8");
-    const projects = JSON.parse(data);
-    const filtered = projects.projects.filter((p) =>
-      p.members.includes(req.user.id),
-    );
-    res.status(200).json(filtered);
+    const projects = ProjectOperations.getAll();
+    const filtered = projects.filter((p) => p.members.includes(req.user.id));
+    const projectData = {
+      projects: filtered,
+      lastUpdated: new Date().toISOString(),
+    };
+    res.status(200).json(projectData);
   } catch (error) {
     console.error("プロジェクトデータの取得に失敗: ", error);
     res.status(500).json({ error: "プロジェクトデータ取得に失敗しました" });
