@@ -15,6 +15,8 @@ import { UserProfilePage } from "@/features/users";
 import { AdminPage } from "@/features/admin";
 import { Layout, ProtectedRoute } from "@/shared/components";
 
+import "@/shared/styles/App.css";
+
 function App() {
   return (
     <Router>

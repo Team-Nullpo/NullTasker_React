@@ -372,11 +372,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
               キャンセル
             </button>
           )}
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
+          <button type="submit" className="submit-button" disabled={loading}>
             <FontAwesomeIcon icon={faSave} />
             {loading ? "保存中..." : isEditMode ? "更新" : "作成"}
           </button>

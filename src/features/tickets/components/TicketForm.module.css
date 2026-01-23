@@ -218,47 +218,6 @@
   margin-top: 24px;
 }
 
-.cancelButton {
-  padding: 10px 20px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #6b7280;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
-  color: #111827;
-}
-
-.submitButton {
-  padding: 10px 20px;
-  background: #3b82f6;
-  border: none;
-  border-radius: 6px;
-  color: #ffffff;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.submitButton:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.submitButton:disabled,
-.cancelButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* レスポンシブ */
 @media (max-width: 768px) {
   .container {

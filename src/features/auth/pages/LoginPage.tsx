@@ -63,7 +63,7 @@ const LoginPage = () => {
             />
           </div>
 
-          <div className="form-group checkbox-group">
+          <div className="form-group-checkbox">
             <label>
               <input
                 type="checkbox"
@@ -75,7 +75,7 @@ const LoginPage = () => {
             </label>
           </div>
 
-          <button type="submit" className="submit-button" disabled={isLoading}>
+          <button type="submit" className="btn-primary" disabled={isLoading}>
             {isLoading ? "ログイン中..." : "ログイン"}
           </button>
         </form>
@@ -84,6 +84,12 @@ const LoginPage = () => {
           <p>
             アカウントをお持ちでないですか？{" "}
             <Link to="/register">新規登録</Link>
+          </p>
+        </div>
+        <div className="login-info">
+          <p>デフォルト管理者アカウント:</p>
+          <p>
+            ID: <strong>admin</strong> / パスワード: <strong>admin123</strong>
           </p>
         </div>
       </div>
