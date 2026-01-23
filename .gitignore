@@ -83,6 +83,11 @@ server/config/tickets.json
 server/config/users.json
 server/config/projects.json
 
+# SQLite database files
+server/db/*.db
+server/db/*.db-wal
+server/db/*.db-shm
+
 # Build output
 dist/
 
