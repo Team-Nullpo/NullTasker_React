@@ -1,7 +1,7 @@
 # NullTasker
 
 <div align="center">
-  <img src="src/assets/logo.png" alt="NullTasker Logo" width="300">
+  <img src="public/logo.png" alt="NullTasker Logo" width="300">
   <p><strong>チーム向け総合タスク管理システム</strong></p>
   <p>効率的なプロジェクト管理とチームコラボレーションを実現</p>
 </div>
