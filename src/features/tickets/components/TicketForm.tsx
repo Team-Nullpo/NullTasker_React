@@ -9,6 +9,7 @@ import {
 import ticketService from "../../../shared/services/ticketService";
 import type { Ticket, TicketFormData } from "@/shared/types";
 import styles from "./TicketForm.module.css";
+import { useProject } from "@/shared/contexts";
 
 type TicketFormProps = {
   ticket?: Ticket | null;
@@ -26,8 +27,9 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { currentProjectId } = useProject();
   const [formData, setFormData] = useState<TicketFormData>({
-    project: projectId || ticket?.project || "",
+    project: projectId || ticket?.project || currentProjectId || "",
     title: ticket?.title || "",
     description: ticket?.description || "",
     assignee: ticket?.assignee || "",
@@ -96,7 +98,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
     setError(null);
 
     // バリデーション
-    if (!formData.project) {
+    if (!currentProjectId) {
       setError("プロジェクトを選択してください");
       return;
     }
@@ -114,7 +116,10 @@ export const TicketForm: React.FC<TicketFormProps> = ({
         savedTicket = await ticketService.updateTicket(ticket.id, formData);
       } else {
         // 新規作成
-        savedTicket = await ticketService.createTicket(formData);
+        savedTicket = await ticketService.createTicket({
+          ...formData,
+          project: currentProjectId,
+        });
       }
 
       if (onSave) {
@@ -146,22 +151,6 @@ export const TicketForm: React.FC<TicketFormProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        {/* プロジェクトID（hidden or disabled） */}
-        <div className={styles.formGroup}>
-          <label className={styles.label}>
-            プロジェクトID <span className={styles.required}>*</span>
-          </label>
-          <input
-            type="text"
-            name="project"
-            value={formData.project}
-            onChange={handleChange}
-            className={styles.input}
-            disabled={!!projectId}
-            required
-          />
-        </div>
-
         {/* タイトル */}
         <div className={styles.formGroup}>
           <label className={styles.label}>

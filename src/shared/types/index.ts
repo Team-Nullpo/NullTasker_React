@@ -61,27 +61,6 @@ export interface AuthContextType {
 export type TaskPriority = "low" | "medium" | "high";
 export type TaskStatus = "todo" | "in_progress" | "review" | "done";
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  assignee: string;
-  startDate: string;
-  dueDate: string;
-  priority: TaskPriority;
-  category: string;
-  status: TaskStatus;
-  progress: number;
-  project: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TasksData {
-  tasks: Task[];
-  lastUpdated: string;
-}
-
 // チケット関連の型定義（データベーススキーマに基づく）
 export interface Ticket {
   id: string;
@@ -104,7 +83,7 @@ export interface Ticket {
 }
 
 export interface TicketsResponse {
-  tasks: Ticket[];
+  tickets: Ticket[];
   lastUpdated: string;
 }
 

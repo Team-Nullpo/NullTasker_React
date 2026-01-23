@@ -42,7 +42,7 @@ export const TicketList: React.FC<TicketListProps> = ({
       setError(null);
       console.log("[TicketList] チケット取得開始");
       const response = await ticketService.getAllTickets();
-      let ticketList = response.tasks;
+      let ticketList = response.tickets;
 
       // プロジェクトIDでフィルタリング
       if (projectId) {

@@ -1182,7 +1182,7 @@ app.get("/api/tasks", authenticateToken, async (req, res) => {
 
     // 既存のフォーマットに合わせてレスポンス
     res.json({
-      tasks: tickets,
+      tickets: tickets,
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
