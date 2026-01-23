@@ -27,7 +27,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  const { currentProjectId } = useProject();
+  const { currentProjectId, currentProject } = useProject();
   const [formData, setFormData] = useState<TicketFormData>({
     project: projectId || ticket?.project || currentProjectId || "",
     title: ticket?.title || "",
@@ -50,6 +50,8 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const isEditMode = !!ticket;
+  const settings = currentProject?.settings;
+  console.log("Project Settings:", settings);
 
   // フォーム入力変更ハンドラ
   const handleChange = (
@@ -217,9 +219,11 @@ export const TicketForm: React.FC<TicketFormProps> = ({
               onChange={handleChange}
               className={styles.select}
             >
-              <option value="low">低</option>
-              <option value="medium">中</option>
-              <option value="high">高</option>
+              {settings?.priorities.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -231,10 +235,11 @@ export const TicketForm: React.FC<TicketFormProps> = ({
               onChange={handleChange}
               className={styles.select}
             >
-              <option value="todo">未着手</option>
-              <option value="in_progress">進行中</option>
-              <option value="review">レビュー</option>
-              <option value="done">完了</option>
+              {settings?.statuses.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

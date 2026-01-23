@@ -14,6 +14,7 @@ import styles from "./TicketList.module.css";
 type TicketListProps = {
   projectId?: string;
   onTicketClick?: (ticket: Ticket) => void;
+  onEditClick?: (ticket: Ticket) => void;
   onCreateClick?: () => void;
 };
 
@@ -24,6 +25,7 @@ type TicketListProps = {
 export const TicketList: React.FC<TicketListProps> = ({
   projectId,
   onTicketClick,
+  onEditClick,
   onCreateClick,
 }) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -255,7 +257,7 @@ export const TicketList: React.FC<TicketListProps> = ({
               key={ticket.id}
               ticket={ticket}
               onClick={() => onTicketClick && onTicketClick(ticket)}
-              onEdit={() => onTicketClick && onTicketClick(ticket)}
+              onEdit={() => onEditClick && onEditClick(ticket)}
               onDelete={() => handleDelete(ticket.id)}
               showActions={true}
             />

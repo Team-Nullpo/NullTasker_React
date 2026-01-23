@@ -45,6 +45,7 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
 
         // プロジェクト一覧を取得
         const projectsData = await projectService.getAllProjects();
+        console.log("[ProjectContext] プロジェクト一覧を取得:", projectsData);
         setProjects(projectsData.projects);
 
         // localStorageから現在のプロジェクトIDを復元

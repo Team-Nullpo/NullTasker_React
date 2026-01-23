@@ -10,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { Ticket } from "@/shared/types";
 import styles from "./TicketCard.module.css";
+import { useProject } from "@/shared/contexts";
 
 type TicketCardProps = {
   ticket: Ticket;
@@ -30,60 +31,27 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   onDelete,
   showActions = true,
 }) => {
+  const { currentProject } = useProject();
+  const settings = currentProject?.settings;
+
   const getPriorityColor = (priority: string): string => {
-    switch (priority) {
-      case "high":
-        return "#ef4444";
-      case "medium":
-        return "#f59e0b";
-      case "low":
-        return "#10b981";
-      default:
-        return "#6b7280";
-    }
+    const color = settings?.priorities.find((p) => p.value === priority)?.color;
+    return color || "#6b7280";
   };
 
   const getStatusColor = (status: string): string => {
-    switch (status) {
-      case "done":
-        return "#10b981";
-      case "in_progress":
-        return "#3b82f6";
-      case "review":
-        return "#8b5cf6";
-      case "todo":
-        return "#6b7280";
-      default:
-        return "#6b7280";
-    }
+    const color = settings?.statuses.find((s) => s.value === status)?.color;
+    return color || "#6b7280";
   };
 
   const getStatusLabel = (status: string): string => {
-    switch (status) {
-      case "todo":
-        return "未着手";
-      case "in_progress":
-        return "進行中";
-      case "review":
-        return "レビュー";
-      case "done":
-        return "完了";
-      default:
-        return status;
-    }
+    const label = settings?.statuses.find((s) => s.value === status)?.label;
+    return label || status;
   };
 
   const getPriorityLabel = (priority: string): string => {
-    switch (priority) {
-      case "high":
-        return "高";
-      case "medium":
-        return "中";
-      case "low":
-        return "低";
-      default:
-        return priority;
-    }
+    const label = settings?.priorities.find((p) => p.value === priority)?.label;
+    return label || priority;
   };
 
   const formatDate = (dateStr: string | null): string => {

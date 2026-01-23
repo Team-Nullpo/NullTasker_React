@@ -1354,6 +1354,22 @@ app.get("/api/projects", authenticateToken, async (req, res) => {
   }
 });
 
+app.get("/api/projects/:projectId", authenticateToken, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const project = ProjectOperations.getById(projectId);
+
+    if (!project || !project.members.includes(req.user.id)) {
+      return res.status(404).json({ error: "プロジェクトが見つかりません" });
+    }
+
+    res.status(200).json(project);
+  } catch (error) {
+    console.error("プロジェクトデータの取得に失敗: ", error);
+    res.status(500).json({ error: "プロジェクトデータ取得に失敗しました" });
+  }
+});
+
 // プロジェクトメンバー用ユーザー一覧取得
 app.get("/api/users", authenticateToken, async (req, res) => {
   try {
