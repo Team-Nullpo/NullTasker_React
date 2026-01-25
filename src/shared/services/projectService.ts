@@ -1,5 +1,6 @@
 import apiClient from "@/lib/apiClient";
-import type { Project, ProjectsData, ProjectFormData } from "@/shared/types";
+import type { ProjectFormData } from "../types";
+import type { Project, ProjectsData } from "@nulltasker/shared-types";
 
 /**
  * プロジェクト管理APIサービス

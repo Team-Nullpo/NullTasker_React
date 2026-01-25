@@ -1,10 +1,13 @@
 import apiClient from "@/lib/apiClient";
+import type { TicketFormData } from "../types";
 import type {
   Ticket,
   TicketsResponse,
-  TicketFormData,
   ApiResponse,
-} from "@/shared/types";
+  GetTasksResponse,
+  CreateTaskResponse,
+  UpdateTaskResponse,
+} from "@nulltasker/shared-types";
 
 /**
  * チケット管理APIサービス
@@ -13,14 +16,14 @@ export const ticketService = {
   /**
    * すべてのチケットを取得
    */
-  async getAllTickets(): Promise<TicketsResponse> {
+  async getAllTickets(): Promise<Ticket[]> {
     try {
       console.log("[ticketService] チケット一覧取得開始");
       const token = localStorage.getItem("token");
       console.log("[ticketService] トークン状態:", token ? "あり" : "なし");
-      const response = await apiClient.get<TicketsResponse>("/tasks");
+      const response = await apiClient.get<GetTasksResponse>("/tasks");
       console.log("[ticketService] チケット一覧取得成功:", response.data);
-      return response.data;
+      return response.data.tickets;
     } catch (error: any) {
       console.error("[ticketService] チケット一覧取得エラー:", {
         status: error.response?.status,
@@ -43,16 +46,18 @@ export const ticketService = {
    * プロジェクトIDでチケットを取得
    */
   async getTicketsByProject(projectId: string): Promise<Ticket[]> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tasks.filter((ticket) => ticket.project === projectId);
+    const response = await apiClient.get<GetTasksResponse>("/tasks");
+    return response.data.tickets.filter(
+      (ticket) => ticket.project === projectId,
+    );
   },
 
   /**
    * 担当者IDでチケットを取得
    */
   async getTicketsByAssignee(assigneeId: string): Promise<Ticket[]> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tasks.filter(
+    const response = await apiClient.get<GetTasksResponse>("/tasks");
+    return response.data.tickets.filter(
       (ticket) => ticket.assignee === assigneeId,
     );
   },
@@ -61,15 +66,18 @@ export const ticketService = {
    * ステータスでチケットを取得
    */
   async getTicketsByStatus(status: string): Promise<Ticket[]> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tasks.filter((ticket) => ticket.status === status);
+    const response = await apiClient.get<GetTasksResponse>("/tasks");
+    return response.data.tickets.filter((ticket) => ticket.status === status);
   },
 
   /**
    * 新しいチケットを作成
    */
   async createTicket(ticketData: TicketFormData): Promise<Ticket> {
-    const response = await apiClient.post<Ticket>("/tasks", ticketData);
+    const response = await apiClient.post<CreateTaskResponse>(
+      "/tasks",
+      ticketData,
+    );
     return response.data;
   },
 
@@ -80,7 +88,7 @@ export const ticketService = {
     ticketId: string,
     ticketData: Partial<TicketFormData>,
   ): Promise<Ticket> {
-    const response = await apiClient.put<Ticket>(
+    const response = await apiClient.put<UpdateTaskResponse>(
       `/tasks/${ticketId}`,
       ticketData,
     );
