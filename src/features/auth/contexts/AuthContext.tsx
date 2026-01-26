@@ -62,14 +62,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initAuth();
   }, []);
 
-  const login = async (
-    loginId: string,
-    password: string,
-    rememberMe = false,
-  ) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     try {
       const response: LoginResponse = await authService.login({
-        loginId,
+        email,
         password,
         rememberMe,
       });

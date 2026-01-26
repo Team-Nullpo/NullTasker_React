@@ -3,7 +3,6 @@ export type UserRole = "system_admin" | "project_admin" | "user";
 
 export interface User {
   id: string;
-  loginId: string;
   displayName: string;
   email: string;
   password?: string; // クライアント側では通常含まれない
@@ -11,6 +10,14 @@ export interface User {
   projects: string[];
   createdAt: string;
   lastLogin: string | null;
+}
+
+export interface UserPayload {
+  displayName: string;
+  email: string;
+  role: UserRole;
+  projects: string[];
+  password: string;
 }
 
 export interface UserProfile {
@@ -24,21 +31,18 @@ export interface UserProfile {
 
 // 認証関連の型定義
 export interface LoginRequest {
-  loginId: string;
+  email: string;
   password: string;
   rememberMe?: boolean;
 }
 
 export interface LoginResponse {
-  success: boolean;
   token: string;
   refreshToken: string;
   user: UserProfile;
-  message: string;
 }
 
 export interface RegisterRequest {
-  loginId: string;
   displayName: string;
   email: string;
   password: string;
