@@ -4,22 +4,43 @@
 // ============ 共有型（フロントエンドと同じ定義） ============
 // Note: 将来的にはモノレポ化して共有パッケージにすることを推奨
 
+import { Request, Response } from "express";
+import { Send } from "express-serve-static-core";
+
 export type UserRole = "system_admin" | "project_admin" | "user";
 export type TaskPriority = "low" | "medium" | "high";
 export type TaskStatus = "todo" | "in_progress" | "review" | "done";
+
+export type ErrorCode =
+  | "USER_NOT_FOUND"
+  | "INVALID_CREDENTIALS"
+  | "TOKEN_EXPIRED"
+  | "FORBIDDEN"
+  | "VALIDATION_ERROR"
+  | "SERVER_ERROR"
+  | "PROJECT_NOT_FOUND"
+  | "TICKET_NOT_FOUND"
+  | "CONFLICT_ERROR";
 
 // ============ ユーザー関連 ============
 
 /** クライアントに返すユーザー情報（パスワードを含まない） */
 export interface User {
   id: string;
-  loginId: string;
   displayName: string;
   email: string;
   role: UserRole;
   projects: string[];
   createdAt: string;
   lastLogin: string | null;
+}
+
+export interface UserPayload {
+  displayName: string;
+  email: string;
+  role: UserRole;
+  projects: string[];
+  password: string;
 }
 
 /** サーバー内部で使用するユーザー情報（パスワードを含む） */
@@ -36,33 +57,29 @@ export interface UsersData {
 // ============ 認証関連 ============
 
 export interface LoginRequest {
-  loginId: string;
+  email: string;
   password: string;
   rememberMe?: boolean;
 }
 
 export interface LoginResponse {
-  success: boolean;
   token: string;
   refreshToken: string;
   user: User;
-  message: string;
 }
 
 export interface RegisterRequest {
-  loginId: string;
   displayName: string;
   email: string;
   password: string;
 }
 
-export interface RefreshTokenRequest {
-  refreshToken: string;
+export interface Token {
+  token: string;
 }
 
 export interface TokenPayload {
   id: string;
-  loginId: string;
   displayName: string;
   email: string;
   role: UserRole;
@@ -94,27 +111,9 @@ export interface Ticket {
   updated_at: string;
 }
 
-export interface TicketCreateData {
-  id?: string;
+export interface TicketPayload {
   project: string;
   title: string;
-  description?: string;
-  assignee?: string;
-  category?: string;
-  priority?: TaskPriority;
-  status?: TaskStatus;
-  progress?: number;
-  start_date?: string | null;
-  due_date?: string | null;
-  estimated_hours?: number;
-  actual_hours?: number;
-  tags?: string[];
-  parent_task?: string | null;
-}
-
-export interface TicketUpdateData {
-  project?: string;
-  title?: string;
   description?: string;
   assignee?: string;
   category?: string;
@@ -204,13 +203,11 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
-  error?: string;
 }
 
 export interface ApiErrorResponse {
-  success: false;
+  errorCode?: ErrorCode;
   message: string;
-  error?: string;
   errors?: Array<{ msg: string; param?: string }>;
 }
 
@@ -232,4 +229,12 @@ declare global {
       user?: TokenPayload;
     }
   }
+}
+
+export interface RequestWithType<ReqBody> extends Request {
+  body: ReqBody;
+}
+
+export interface ResponseWithError<ResBody> extends Response {
+  json: Send<ResBody | ApiErrorResponse, this>;
 }

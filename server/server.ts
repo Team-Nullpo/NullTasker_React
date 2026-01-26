@@ -13,7 +13,7 @@ import fsSync from "fs";
 import path from "path";
 import cors from "cors";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import {
@@ -49,21 +49,17 @@ import type {
   UsersData,
   TokenPayload,
   LoginRequest,
+  LoginResponse,
   RegisterRequest,
   Ticket,
-  TicketCreateData,
+  TicketPayload,
   Project,
   ProjectCreateData,
+  RequestWithType,
+  ResponseWithError,
+  UserPayload,
+  Token,
 } from "./types";
-
-// Express拡張の型定義
-declare global {
-  namespace Express {
-    interface Request {
-      user?: TokenPayload;
-    }
-  }
-}
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -267,20 +263,22 @@ const PROJECTS_FILE = path.join(__dirname, "config", "projects.json");
 app.post(
   "/api/register",
   registerValidation,
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: RequestWithType<RegisterRequest>,
+    res: ResponseWithError<User>,
+  ): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         res.status(400).json({
-          success: false,
+          errorCode: "VALIDATION_ERROR",
           message: errors.array()[0].msg,
           errors: errors.array(),
         });
         return;
       }
 
-      const { loginId, displayName, email, password } =
-        req.body as RegisterRequest;
+      const { displayName, email, password } = req.body;
 
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const users: UsersData = JSON.parse(userData);
@@ -289,12 +287,12 @@ app.post(
       const projects = JSON.parse(projectData);
 
       const existingUser = users.users.find(
-        (u) => u.loginId === loginId || u.email === email,
+        (u) => u.email === email || u.displayName === displayName,
       );
       if (existingUser) {
         res.status(409).json({
-          success: false,
-          message: "既に登録済みのログインIDまたはメールアドレスです",
+          errorCode: "CONFLICT_ERROR",
+          message: "既に登録済みのメールアドレスまたは表示名です",
         });
         return;
       }
@@ -303,7 +301,6 @@ app.post(
 
       const newUser: UserWithPassword = {
         id: generateId("user"),
-        loginId,
         displayName,
         email,
         password: hashedPassword,
@@ -335,12 +332,12 @@ app.post(
         "utf8",
       );
 
-      const { password: _, ...userWithoutPassword } = newUser;
+      const userWithoutPassword: User = newUser satisfies User;
       res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("ユーザー登録エラー:", error);
       res.status(500).json({
-        success: false,
+        errorCode: "SERVER_ERROR",
         message: "サーバーエラーが発生しました",
       });
     }
@@ -351,24 +348,27 @@ app.post(
 app.post(
   "/api/login",
   loginValidation,
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: RequestWithType<LoginRequest>,
+    res: ResponseWithError<LoginResponse>,
+  ): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         res.status(400).json({
-          success: false,
+          errorCode: "VALIDATION_ERROR",
           message: errors.array()[0].msg,
           errors: errors.array(),
         });
         return;
       }
 
-      const { loginId, password, rememberMe } = req.body as LoginRequest;
+      const { email, password, rememberMe } = req.body;
 
-      if (!loginId || !password) {
+      if (!email || !password) {
         res.status(400).json({
-          success: false,
-          message: "ログインIDとパスワードを入力してください",
+          errorCode: "VALIDATION_ERROR",
+          message: "メールアドレスとパスワードを入力してください",
         });
         return;
       }
@@ -376,13 +376,11 @@ app.post(
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const users: UsersData = JSON.parse(userData);
 
-      const user = users.users.find(
-        (u) => u.id === loginId || u.loginId === loginId,
-      );
+      const user = users.users.find((u) => u.email === email);
       if (!user) {
         res.status(401).json({
-          success: false,
-          message: "ログインIDまたはパスワードが正しくありません",
+          errorCode: "INVALID_CREDENTIALS",
+          message: "メールアドレスまたはパスワードが正しくありません",
         });
         return;
       }
@@ -390,15 +388,14 @@ app.post(
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         res.status(401).json({
-          success: false,
-          message: "ログインIDまたはパスワードが正しくありません",
+          errorCode: "INVALID_CREDENTIALS",
+          message: "メールアドレスまたはパスワードが正しくありません",
         });
         return;
       }
 
       const tokenPayload: Omit<TokenPayload, "iat" | "exp"> = {
         id: user.id,
-        loginId: user.loginId || user.id,
         displayName: user.displayName,
         email: user.email,
         role: user.role || "user",
@@ -419,14 +416,12 @@ app.post(
       users.lastUpdated = new Date().toISOString();
       await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
 
-      const { password: _, ...userWithoutPassword } = user;
+      const userWithoutPassword: User = user satisfies User;
 
       res.json({
-        success: true,
         token: accessToken,
         refreshToken,
         user: userWithoutPassword,
-        message: "ログインに成功しました",
       });
     } catch (error) {
       console.error(
@@ -434,7 +429,7 @@ app.post(
         NODE_ENV === "development" ? error : (error as Error).message,
       );
       res.status(500).json({
-        success: false,
+        errorCode: "SERVER_ERROR",
         message: "サーバーエラーが発生しました",
       });
     }
@@ -442,102 +437,110 @@ app.post(
 );
 
 // トークン検証エンドポイント
-app.post("/api/verify-token", (req: Request, res: Response): void => {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1];
+app.post(
+  "/api/verify-token",
+  (req: RequestWithType<void>, res: ResponseWithError<TokenPayload>): void => {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(" ")[1];
 
-    if (!token) {
-      res.status(401).json({
-        success: false,
-        message: "トークンが提供されていません",
-      });
-      return;
-    }
-
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-      if (err) {
-        res.status(403).json({
-          success: false,
-          message: "トークンが無効です",
+      if (!token) {
+        res.status(401).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "トークンが提供されていません",
         });
         return;
       }
 
-      res.json({
-        success: true,
-        user: decoded,
-        message: "トークンは有効です",
+      jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+          res.status(403).json({
+            errorCode: "INVALID_CREDENTIALS",
+            message: "トークンが無効です",
+          });
+          return;
+        }
+
+        res.json(decoded as TokenPayload);
       });
-    });
-  } catch (error) {
-    console.error("トークン検証エラー:", error);
-    res.status(500).json({
-      success: false,
-      message: "サーバーエラーが発生しました",
-    });
-  }
-});
+    } catch (error) {
+      console.error("トークン検証エラー:", error);
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "サーバーエラーが発生しました",
+      });
+    }
+  },
+);
 
 // リフレッシュトークン
-app.post("/api/refresh", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { refreshToken } = req.body as { refreshToken: string };
+app.post(
+  "/api/refresh",
+  async (
+    req: RequestWithType<Token>,
+    res: ResponseWithError<Token>,
+  ): Promise<void> => {
+    try {
+      const { token } = req.body;
 
-    if (!refreshToken) {
-      res.status(401).json({
-        success: false,
-        message: "リフレッシュトークンが必要です",
+      if (!token) {
+        res.status(401).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "リフレッシュトークンが必要です",
+        });
+        return;
+      }
+
+      const decoded = jwt.verify(token, JWT_SECRET);
+
+      const isTokenPayload = (obj: unknown): obj is JwtPayload => {
+        return typeof obj === "object" && obj !== null && "id" in obj;
+      };
+      const decodedPayload = isTokenPayload(decoded)
+        ? (decoded as TokenPayload)
+        : null;
+      if (!decodedPayload || decodedPayload.type !== "refresh") {
+        res.status(403).json({
+          errorCode: "INVALID_CREDENTIALS",
+          message: "無効なリフレッシュトークンです",
+        });
+        return;
+      }
+
+      const userData = await fs.readFile(USERS_FILE, "utf8");
+      const users: UsersData = JSON.parse(userData);
+      const user = users.users.find((u) => u.id === decodedPayload.id);
+
+      if (!user) {
+        res.status(404).json({
+          message: "ユーザーが見つかりません",
+        });
+        return;
+      }
+
+      const newAccessToken = jwt.sign(
+        {
+          id: user.id,
+          displayName: user.displayName,
+          email: user.email,
+          role: user.role || "user",
+          projects: user.projects || ["default"],
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY.ACCESS_TOKEN },
+      );
+
+      res.json({
+        token: newAccessToken,
       });
-      return;
-    }
-
-    const decoded = jwt.verify(refreshToken, JWT_SECRET) as TokenPayload;
-
-    if (decoded.type !== "refresh") {
+    } catch {
       res.status(403).json({
-        success: false,
+        errorCode: "INVALID_CREDENTIALS",
         message: "無効なリフレッシュトークンです",
       });
-      return;
     }
-
-    const userData = await fs.readFile(USERS_FILE, "utf8");
-    const users: UsersData = JSON.parse(userData);
-    const user = users.users.find((u) => u.id === decoded.id);
-
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "ユーザーが見つかりません",
-      });
-      return;
-    }
-
-    const newAccessToken = jwt.sign(
-      {
-        id: user.id,
-        loginId: user.loginId || user.id,
-        displayName: user.displayName,
-        email: user.email,
-        role: user.role || "user",
-        projects: user.projects || ["default"],
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY.ACCESS_TOKEN },
-    );
-
-    res.json({
-      success: true,
-      token: newAccessToken,
-    });
-  } catch {
-    res.status(403).json({
-      success: false,
-      message: "無効なリフレッシュトークンです",
-    });
-  }
-});
+  },
+);
 
 // トークン検証
 app.post(
@@ -563,22 +566,28 @@ app.post(
 app.get(
   "/api/user",
   authenticateToken,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: ResponseWithError<User>): Promise<void> => {
     try {
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const data: UsersData = JSON.parse(userData);
 
       const user = data.users.find((u) => u.id === req.user?.id);
       if (!user) {
-        res.status(404).json({ error: "ユーザーが見つかりません" });
+        res.status(404).json({
+          errorCode: "USER_NOT_FOUND",
+          message: "ユーザーが見つかりません",
+        });
         return;
       }
 
-      const { password: _, ...userWithoutPassword } = user;
+      const userWithoutPassword: User = user satisfies User;
       res.json(userWithoutPassword);
     } catch (error) {
       console.error("ユーザー情報取得エラー:", error);
-      res.status(500).json({ error: "ユーザー情報の取得に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "ユーザー情報の取得に失敗しました",
+      });
     }
   },
 );
@@ -702,14 +711,17 @@ app.put(
 app.get(
   "/api/users",
   authenticateToken,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: ResponseWithError<User[]>): Promise<void> => {
     try {
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const data: UsersData = JSON.parse(userData);
 
       const currentUser = data.users.find((u) => u.id === req.user?.id);
       if (!currentUser) {
-        res.status(404).json({ error: "ユーザーが見つかりません" });
+        res.status(404).json({
+          errorCode: "USER_NOT_FOUND",
+          message: "ユーザーが見つかりません",
+        });
         return;
       }
 
@@ -717,14 +729,17 @@ app.get(
         user.projects.some((project) => currentUser.projects.includes(project)),
       );
       const usersWithoutPasswords: User[] = projectUsers.map((user) => {
-        const { password, ...userWithoutPassword } = user;
+        const userWithoutPassword = user satisfies User;
         return userWithoutPassword;
       });
 
       res.status(200).json(usersWithoutPasswords);
     } catch (error) {
       console.error("ユーザー一覧取得エラー:", error);
-      res.status(500).json({ error: "ユーザー一覧の取得に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "ユーザー一覧の取得に失敗しました",
+      });
     }
   },
 );
@@ -736,20 +751,23 @@ app.get(
   "/api/admin/users",
   authenticateToken,
   requireSystemAdmin,
-  async (_req: Request, res: Response): Promise<void> => {
+  async (_req: Request, res: ResponseWithError<User[]>): Promise<void> => {
     try {
       const userData = await fs.readFile(USERS_FILE, "utf8");
       const users: UsersData = JSON.parse(userData);
 
       const usersWithoutPasswords: User[] = users.users.map((user) => {
-        const { password, ...userWithoutPassword } = user;
+        const userWithoutPassword = user satisfies User;
         return userWithoutPassword;
       });
 
       res.status(200).json(usersWithoutPasswords);
     } catch (error) {
       console.error("管理者データ取得エラー:", error);
-      res.status(500).json({ error: "データの取得に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "ユーザーデータの取得に失敗しました",
+      });
     }
   },
 );
@@ -759,12 +777,18 @@ app.post(
   "/api/admin/users",
   authenticateToken,
   requireSystemAdmin,
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: RequestWithType<UserPayload>,
+    res: ResponseWithError<User>,
+  ): Promise<void> => {
     try {
-      const { loginId, displayName, email, role, password } = req.body;
+      const { displayName, email, role, password } = req.body;
 
-      if (!loginId || !displayName || !email || !role || !password) {
-        res.status(400).json({ error: "必須項目が不足しています" });
+      if (!displayName || !email || !role || !password) {
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "必須項目が不足しています",
+        });
         return;
       }
 
@@ -772,12 +796,13 @@ app.post(
       const data: UsersData = JSON.parse(userData);
 
       const existingUser = data.users.find(
-        (u) => u.loginId === loginId || u.email === email,
+        (u) => u.email === email || u.displayName === displayName,
       );
 
       if (existingUser) {
         res.status(409).json({
-          error: "ログインIDまたはメールアドレスが既に使用されています",
+          errorCode: "CONFLICT_ERROR",
+          message: "ユーザー名またはメールアドレスが既に使用されています",
         });
         return;
       }
@@ -786,7 +811,6 @@ app.post(
 
       const newUser: UserWithPassword = {
         id: generateId("user"),
-        loginId,
         displayName,
         email,
         password: hashedPassword,
@@ -801,14 +825,17 @@ app.post(
 
       await fs.writeFile(USERS_FILE, JSON.stringify(data, null, 2));
 
-      const { password: _, ...userWithoutPassword } = newUser;
+      const userWithoutPassword: User = newUser satisfies User;
       res
         .status(201)
         .location(`/api/admin/users/${newUser.id}`)
         .json(userWithoutPassword);
     } catch (error) {
       console.error("ユーザー作成エラー:", error);
-      res.status(500).json({ error: "ユーザーの作成に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "ユーザーの作成に失敗しました",
+      });
     }
   },
 );
@@ -818,13 +845,19 @@ app.put(
   "/api/admin/users/:userId",
   authenticateToken,
   requireSystemAdmin,
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: RequestWithType<UserPayload>,
+    res: ResponseWithError<User>,
+  ): Promise<void> => {
     try {
       const { userId } = req.params;
       const { displayName, email, role, password } = req.body;
 
       if (!displayName || !email || !role) {
-        res.status(400).json({ error: "必須項目が不足しています" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "必須項目が不足しています",
+        });
         return;
       }
 
@@ -833,7 +866,10 @@ app.put(
 
       const userIndex = data.users.findIndex((u) => u.id === userId);
       if (userIndex === -1) {
-        res.status(404).json({ error: "ユーザーが見つかりません" });
+        res.status(404).json({
+          errorCode: "USER_NOT_FOUND",
+          message: "ユーザーが見つかりません",
+        });
         return;
       }
 
@@ -842,9 +878,10 @@ app.put(
       );
 
       if (emailExists) {
-        res
-          .status(409)
-          .json({ error: "このメールアドレスは既に使用されています" });
+        res.status(409).json({
+          errorCode: "CONFLICT_ERROR",
+          message: "このメールアドレスは既に使用されています",
+        });
         return;
       }
 
@@ -864,11 +901,14 @@ app.put(
 
       await fs.writeFile(USERS_FILE, JSON.stringify(data, null, 2));
 
-      const { password: _, ...userWithoutPassword } = updatedUser;
+      const userWithoutPassword: User = updatedUser satisfies User;
       res.status(200).json(userWithoutPassword);
     } catch (error) {
       console.error("ユーザー更新エラー:", error);
-      res.status(500).json({ error: "ユーザーの更新に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "ユーザーの更新に失敗しました",
+      });
     }
   },
 );
@@ -878,12 +918,15 @@ app.delete(
   "/api/admin/users/:userId",
   authenticateToken,
   requireSystemAdmin,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: ResponseWithError<void>): Promise<void> => {
     try {
       const { userId } = req.params;
 
       if (userId === req.user?.id) {
-        res.status(400).json({ error: "自分自身を削除することはできません" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "自分自身を削除することはできません",
+        });
         return;
       }
 
@@ -892,7 +935,10 @@ app.delete(
 
       const userIndex = data.users.findIndex((u) => u.id === userId);
       if (userIndex === -1) {
-        res.status(404).json({ error: "ユーザーが見つかりません" });
+        res.status(404).json({
+          errorCode: "USER_NOT_FOUND",
+          message: "ユーザーが見つかりません",
+        });
         return;
       }
 
@@ -904,7 +950,10 @@ app.delete(
       res.status(204).end();
     } catch (error) {
       console.error("ユーザー削除エラー:", error);
-      res.status(500).json({ error: "ユーザーの削除に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "ユーザーの削除に失敗しました",
+      });
     }
   },
 );
@@ -914,13 +963,16 @@ app.get(
   "/api/admin/projects",
   authenticateToken,
   requireSystemAdmin,
-  (_req: Request, res: Response): void => {
+  (_req: Request, res: ResponseWithError<Project[]>): void => {
     try {
-      const projects = ProjectOperations.getAll();
+      const projects: Project[] = ProjectOperations.getAll();
       res.status(200).json(projects);
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
-      res.status(500).json({ error: "プロジェクトデータ取得に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "プロジェクトデータの取得に失敗しました",
+      });
     }
   },
 );
@@ -930,12 +982,18 @@ app.post(
   "/api/admin/projects",
   authenticateToken,
   requireSystemAdmin,
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: RequestWithType<ProjectCreateData>,
+    res: ResponseWithError<Project>,
+  ): Promise<void> => {
     try {
       const { name, description, owner } = req.body;
 
       if (!name || !owner) {
-        res.status(400).json({ error: "必須項目が不足しています" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "必須項目が不足しています",
+        });
         return;
       }
 
@@ -944,7 +1002,10 @@ app.post(
 
       const ownerUser = users.users.find((u) => u.id === owner);
       if (!ownerUser) {
-        res.status(400).json({ error: "指定されたオーナーが存在しません" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "指定されたオーナーが存在しません",
+        });
         return;
       }
 
@@ -986,7 +1047,10 @@ app.post(
         .json(savedProject);
     } catch (error) {
       console.error("プロジェクト作成エラー:", error);
-      res.status(500).json({ error: "プロジェクトの作成に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "プロジェクトの作成に失敗しました",
+      });
     }
   },
 );
@@ -996,13 +1060,19 @@ app.put(
   "/api/admin/projects/:projectId",
   authenticateToken,
   requireSystemAdmin,
-  async (req: Request, res: Response): Promise<void> => {
+  async (
+    req: RequestWithType<ProjectCreateData>,
+    res: ResponseWithError<Project>,
+  ): Promise<void> => {
     try {
       const { projectId } = req.params;
       const { name, description, owner } = req.body;
 
       if (!name || !owner) {
-        res.status(400).json({ error: "必須項目が不足しています" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "必須項目が不足しています",
+        });
         return;
       }
 
@@ -1012,13 +1082,18 @@ app.put(
 
       const projectIndex = projects?.findIndex((p) => p.id === projectId);
       if (projectIndex === -1 || !projects) {
-        res.status(404).json({ error: "プロジェクトが見つかりません" });
+        res.status(404).json({
+          message: "プロジェクトが見つかりません",
+        });
         return;
       }
 
       const ownerUser = users.users.find((u) => u.id === owner);
       if (!ownerUser) {
-        res.status(400).json({ error: "指定されたオーナーが存在しません" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "指定されたオーナーが存在しません",
+        });
         return;
       }
 
@@ -1029,14 +1104,19 @@ app.put(
       });
 
       if (!updatedProject) {
-        res.status(404).json({ error: "プロジェクトの更新に失敗しました" });
+        res.status(404).json({
+          message: "プロジェクトの更新に失敗しました",
+        });
         return;
       }
 
       res.status(200).json(updatedProject);
     } catch (error) {
       console.error("プロジェクト更新エラー:", error);
-      res.status(500).json({ error: "プロジェクトの更新に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "プロジェクトの更新に失敗しました",
+      });
     }
   },
 );
@@ -1046,14 +1126,15 @@ app.delete(
   "/api/admin/projects/:projectId",
   authenticateToken,
   requireSystemAdmin,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: ResponseWithError<void>): Promise<void> => {
     try {
       const { projectId } = req.params;
 
       if (projectId === "default") {
-        res
-          .status(400)
-          .json({ error: "デフォルトプロジェクトは削除できません" });
+        res.status(400).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "デフォルトプロジェクトは削除できません",
+        });
         return;
       }
 
@@ -1063,7 +1144,9 @@ app.delete(
 
       const projectIndex = projects?.findIndex((p) => p.id === projectId);
       if (projectIndex === -1 || !projects) {
-        res.status(404).json({ error: "プロジェクトが見つかりません" });
+        res.status(404).json({
+          message: "プロジェクトが見つかりません",
+        });
         return;
       }
 
@@ -1082,7 +1165,10 @@ app.delete(
       res.status(204).end();
     } catch (error) {
       console.error("プロジェクト削除エラー:", error);
-      res.status(500).json({ error: "プロジェクトの削除に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "プロジェクトの削除に失敗しました",
+      });
     }
   },
 );
@@ -1229,7 +1315,7 @@ app.get(
 app.get(
   "/api/tasks",
   authenticateToken,
-  (_req: Request, res: Response): void => {
+  (_req: Request, res: ResponseWithError<Ticket[]>): void => {
     try {
       debugLog("タスク取得リクエスト受信:", _req.user?.id);
 
@@ -1237,15 +1323,12 @@ app.get(
 
       debugLog("タスク取得成功:", tickets.length, "件");
 
-      res.json({
-        tickets,
-        lastUpdated: new Date().toISOString(),
-      });
+      res.json(tickets);
     } catch (error) {
       console.error("タスク読み込みエラー:", (error as Error).message);
       res.status(500).json({
-        success: false,
-        error: "タスクの読み込みに失敗しました",
+        errorCode: "SERVER_ERROR",
+        message: "タスクの読み込みに失敗しました",
       });
     }
   },
@@ -1254,9 +1337,12 @@ app.get(
 app.post(
   "/api/tasks",
   authenticateToken,
-  (req: Request, res: Response): void => {
+  (
+    req: RequestWithType<TicketPayload>,
+    res: ResponseWithError<Ticket>,
+  ): void => {
     try {
-      const payload = req.body as TicketCreateData;
+      const payload = req.body;
 
       const allTickets = TicketOperations.getAll();
       const existingTask = allTickets.find(
@@ -1265,11 +1351,14 @@ app.post(
       );
 
       if (existingTask) {
-        res.status(409).json({ error: "同名のタスクが存在します" });
+        res.status(409).json({
+          errorCode: "VALIDATION_ERROR",
+          message: "同名のタスクが存在します",
+        });
         return;
       }
 
-      const newTask: TicketCreateData = {
+      const newTask: Ticket = {
         id: generateId("task"),
         project: payload.project || "",
         title: payload.title || "Untitled",
@@ -1285,6 +1374,8 @@ app.post(
         actual_hours: parseFloat(String(payload.actual_hours)) || 0,
         tags: Array.isArray(payload.tags) ? payload.tags : [],
         parent_task: payload.parent_task || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const savedTask = TicketOperations.create(newTask);
@@ -1295,8 +1386,8 @@ app.post(
     } catch (error) {
       console.error("タスク保存エラー:", (error as Error).message);
       res.status(500).json({
-        success: false,
-        error: "タスクの保存に失敗しました",
+        errorCode: "SERVER_ERROR",
+        message: "タスクの保存に失敗しました",
       });
     }
   },
@@ -1305,58 +1396,44 @@ app.post(
 app.put(
   "/api/tasks/:ticketId",
   authenticateToken,
-  (req: Request, res: Response): void => {
+  (
+    req: RequestWithType<TicketPayload>,
+    res: ResponseWithError<Ticket>,
+  ): void => {
     try {
       const { ticketId } = req.params;
       const payload = req.body;
 
       const existingTicket = TicketOperations.getById(ticketId);
       if (!existingTicket) {
-        res.status(404).json({ error: "チケットが見つかりません" });
+        res.status(404).json({
+          message: "チケットが見つかりません",
+        });
         return;
       }
 
-      const updateData = {
-        project: payload.project,
-        title: payload.title,
-        description: payload.description,
-        assignee: payload.assignee,
-        category: payload.category,
-        priority: payload.priority,
-        status: payload.status,
-        progress:
-          payload.progress !== undefined
-            ? parseInt(payload.progress)
-            : undefined,
-        start_date: payload.start_date || payload.startDate,
-        due_date: payload.due_date || payload.dueDate,
-        estimated_hours:
-          payload.estimated_hours !== undefined
-            ? parseFloat(payload.estimated_hours)
-            : payload.estimatedHours !== undefined
-              ? parseFloat(payload.estimatedHours)
-              : undefined,
-        actual_hours:
-          payload.actual_hours !== undefined
-            ? parseFloat(payload.actual_hours)
-            : payload.actualHours !== undefined
-              ? parseFloat(payload.actualHours)
-              : undefined,
-        tags: Array.isArray(payload.tags) ? payload.tags : undefined,
-        parent_task: payload.parent_task || payload.parentTask,
+      const updateData: Ticket = {
+        ...existingTicket,
+        ...payload,
+        updated_at: new Date().toISOString(),
       };
 
       const updatedTask = TicketOperations.update(ticketId, updateData);
 
       if (!updatedTask) {
-        res.status(404).json({ error: "チケットの更新に失敗しました" });
+        res.status(404).json({
+          message: "チケットの更新に失敗しました",
+        });
         return;
       }
 
       res.status(200).json(updatedTask);
     } catch (error) {
       console.error("チケット更新エラー:", error);
-      res.status(500).json({ error: "チケットの更新に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "チケットの更新に失敗しました",
+      });
     }
   },
 );
@@ -1364,21 +1441,24 @@ app.put(
 app.delete(
   "/api/tasks/:ticketId",
   authenticateToken,
-  (req: Request, res: Response): void => {
+  (req: Request, res: ResponseWithError<void>): void => {
     try {
       const { ticketId } = req.params;
 
       const deleted = TicketOperations.delete(ticketId);
 
       if (!deleted) {
-        res.status(404).json({ error: "チケットが見つかりません" });
+        res.status(404).json({ message: "チケットが見つかりません" });
         return;
       }
 
       res.status(204).end();
     } catch (error) {
       console.error("チケット削除エラー:", error);
-      res.status(500).json({ error: "チケットの削除に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "チケットの削除に失敗しました",
+      });
     }
   },
 );
@@ -1415,7 +1495,10 @@ app.post(
       res.json({ success: true, backupFile: path.basename(backupFile) });
     } catch (error) {
       console.error("バックアップ作成エラー:", error);
-      res.status(500).json({ error: "バックアップの作成に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "バックアップの作成に失敗しました",
+      });
     }
   },
 );
@@ -1425,20 +1508,19 @@ app.post(
 app.get(
   "/api/projects",
   authenticateToken,
-  (req: Request, res: Response): void => {
+  (req: Request, res: ResponseWithError<Project[]>): void => {
     try {
       const projects = ProjectOperations.getAll();
       const filtered = projects.filter((p) =>
         p.members.includes(req.user?.id || ""),
       );
-      const projectData = {
-        projects: filtered,
-        lastUpdated: new Date().toISOString(),
-      };
-      res.status(200).json(projectData);
+      res.status(200).json(filtered);
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
-      res.status(500).json({ error: "プロジェクトデータ取得に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "プロジェクトデータの取得に失敗しました",
+      });
     }
   },
 );
@@ -1446,20 +1528,23 @@ app.get(
 app.get(
   "/api/projects/:projectId",
   authenticateToken,
-  (req: Request, res: Response): void => {
+  (req: Request, res: ResponseWithError<Project>): void => {
     try {
       const { projectId } = req.params;
       const project = ProjectOperations.getById(projectId);
 
       if (!project || !project.members.includes(req.user?.id || "")) {
-        res.status(404).json({ error: "プロジェクトが見つかりません" });
+        res.status(404).json({ message: "プロジェクトが見つかりません" });
         return;
       }
 
       res.status(200).json(project);
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
-      res.status(500).json({ error: "プロジェクトデータ取得に失敗しました" });
+      res.status(500).json({
+        errorCode: "SERVER_ERROR",
+        message: "プロジェクトデータ取得に失敗しました",
+      });
     }
   },
 );

@@ -44,7 +44,9 @@ export const ticketService = {
    */
   async getTicketsByProject(projectId: string): Promise<Ticket[]> {
     const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tasks.filter((ticket) => ticket.project === projectId);
+    return response.data.tickets.filter(
+      (ticket) => ticket.project === projectId,
+    );
   },
 
   /**
@@ -52,7 +54,7 @@ export const ticketService = {
    */
   async getTicketsByAssignee(assigneeId: string): Promise<Ticket[]> {
     const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tasks.filter(
+    return response.data.tickets.filter(
       (ticket) => ticket.assignee === assigneeId,
     );
   },
@@ -62,7 +64,7 @@ export const ticketService = {
    */
   async getTicketsByStatus(status: string): Promise<Ticket[]> {
     const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tasks.filter((ticket) => ticket.status === status);
+    return response.data.tickets.filter((ticket) => ticket.status === status);
   },
 
   /**
