@@ -1,7 +1,7 @@
 // サーバーサイド定数定義
 // フロントエンドのconstants.jsと同期を保つ必要がある
 
-import type { TaskPriority, TaskStatus, UserRole } from "./types";
+import type { TaskPriority, TaskStatus } from "@nulltasker/shared-types";
 
 // タスク進捗率の設定
 export const TASK_PROGRESS_CONFIG = {

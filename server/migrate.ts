@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { ensureDatabase, TicketOperations } from "./db/database";
-import type { TicketCreateData } from "./types";
+import type { Ticket } from "@nulltasker/shared-types";
 
 interface LegacyTicket {
   id: string;
@@ -96,7 +96,7 @@ async function migrateTickets(): Promise<void> {
         }
 
         // チケットデータを正規化
-        const normalizedTicket: TicketCreateData = {
+        const normalizedTicket: Ticket = {
           id: ticket.id,
           project: ticket.project || "",
           title: ticket.title || "Untitled",
@@ -120,6 +120,8 @@ async function migrateTickets(): Promise<void> {
             0,
           tags: Array.isArray(ticket.tags) ? ticket.tags : [],
           parent_task: ticket.parent_task || ticket.parentTask || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         };
 
         // データベースに挿入

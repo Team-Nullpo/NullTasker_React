@@ -1,19 +1,4 @@
 import type { User, Project, Ticket } from "@nulltasker/shared-types";
-export type UserRole = "system_admin" | "project_admin" | "user";
-export type TaskPriority = "low" | "medium" | "high";
-export type TaskStatus = "todo" | "in_progress" | "review" | "done";
-
-export type ErrorCode =
-  | "USER_NOT_FOUND"
-  | "INVALID_CREDENTIALS"
-  | "TOKEN_EXPIRED"
-  | "FORBIDDEN"
-  | "VALIDATION_ERROR"
-  | "SERVER_ERROR"
-  | "PROJECT_NOT_FOUND"
-  | "TICKET_NOT_FOUND"
-  | "CONFLICT_ERROR";
-
 // ============ ユーザー関連 ============
 
 /** サーバー内部で使用するユーザー情報（パスワードを含む） */

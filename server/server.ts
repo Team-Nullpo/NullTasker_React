@@ -1138,8 +1138,8 @@ app.put(
       const users: UsersData = JSON.parse(userData);
       const projects = ProjectOperations.getAll();
 
-      const projectIndex = projects?.findIndex((p) => p.id === projectId);
-      if (projectIndex === -1 || !projects) {
+      const project = projects?.find((p) => p.id === projectId);
+      if (!project) {
         res.status(404).json({
           success: false,
           message: "プロジェクトが見つかりません",
@@ -1158,6 +1158,7 @@ app.put(
       }
 
       const updatedProject = ProjectOperations.update(projectId, {
+        ...project,
         name,
         description: description || "",
         owner,

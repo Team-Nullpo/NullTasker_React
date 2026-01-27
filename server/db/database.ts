@@ -4,14 +4,11 @@ import fs from "fs";
 import { initializeDatabase } from "./init";
 import type {
   Ticket,
-  TicketCreateData,
-  TicketUpdateData,
   Project,
-  ProjectCreateData,
-  ProjectUpdateData,
   TaskPriority,
   TaskStatus,
-} from "../types";
+  TicketPayload,
+} from "@nulltasker/shared-types";
 
 // データベースインスタンス
 let db: Database.Database | null = null;
@@ -47,7 +44,7 @@ interface RawProject {
   admins: string;
   settings: string;
   created_at: string;
-  last_updated: string;
+  updated_at: string;
 }
 
 /**
@@ -88,7 +85,7 @@ function parseProject(project: RawProject): Project {
     admins: project.admins ? JSON.parse(project.admins) : [],
     settings: project.settings ? JSON.parse(project.settings) : {},
     created_at: project.created_at,
-    last_updated: project.last_updated,
+    updated_at: project.updated_at,
   };
 }
 
@@ -180,7 +177,7 @@ export const TicketOperations = {
   /**
    * チケットを作成
    */
-  create(ticketData: TicketCreateData): Ticket {
+  create(ticketData: Ticket): Ticket {
     const database = getDatabase();
 
     const {
@@ -233,7 +230,7 @@ export const TicketOperations = {
   /**
    * チケットを更新
    */
-  update(id: string, ticketData: TicketUpdateData): Ticket | null {
+  update(id: string, ticketData: Ticket): Ticket | null {
     const database = getDatabase();
 
     const {
@@ -402,7 +399,7 @@ export const ProjectOperations = {
   /**
    * プロジェクトを作成
    */
-  create(projectData: ProjectCreateData): Project {
+  create(projectData: Project): Project {
     const database = getDatabase();
 
     const {
@@ -437,14 +434,14 @@ export const ProjectOperations = {
   /**
    * プロジェクトを追加（createのエイリアス - 旧コードとの互換性のため）
    */
-  add(projectData: ProjectCreateData): Project {
+  add(projectData: Project): Project {
     return this.create(projectData);
   },
 
   /**
    * プロジェクトを更新
    */
-  update(id: string, projectData: ProjectUpdateData): Project | null {
+  update(id: string, projectData: Project): Project | null {
     const database = getDatabase();
 
     const { name, description, owner, members, admins, settings } = projectData;
@@ -457,7 +454,7 @@ export const ProjectOperations = {
         members = COALESCE(?, members),
         admins = COALESCE(?, admins),
         settings = COALESCE(?, settings),
-        last_updated = datetime('now')
+        updated_at = datetime('now')
       WHERE id = ?
     `);
 
@@ -506,7 +503,7 @@ export const ProjectOperations = {
     const members = project.members || [];
     if (!members.includes(userId)) {
       members.push(userId);
-      return this.update(projectId, { members });
+      return this.update(projectId, { ...project, members: members });
     }
 
     return project;
@@ -520,7 +517,7 @@ export const ProjectOperations = {
     if (!project) return null;
 
     const members = (project.members || []).filter((id) => id !== userId);
-    return this.update(projectId, { members });
+    return this.update(projectId, { ...project, members: members });
   },
 
   /**
@@ -533,7 +530,7 @@ export const ProjectOperations = {
     const admins = project.admins || [];
     if (!admins.includes(userId)) {
       admins.push(userId);
-      return this.update(projectId, { admins });
+      return this.update(projectId, { ...project, admins: admins });
     }
 
     return project;
@@ -547,7 +544,7 @@ export const ProjectOperations = {
     if (!project) return null;
 
     const admins = (project.admins || []).filter((id) => id !== userId);
-    return this.update(projectId, { admins });
+    return this.update(projectId, { ...project, admins: admins });
   },
 };
 
