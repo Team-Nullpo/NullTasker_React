@@ -4,6 +4,7 @@ import {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
+  TokenPayload,
   User,
 } from "@nulltasker/shared-types";
 
@@ -31,9 +32,11 @@ export const logout = async (): Promise<ApiResBody<User>> => {
   return response.data;
 };
 
-export const validateToken = async (token: string): Promise<boolean> => {
+export const validateToken = async (
+  token: string,
+): Promise<ApiResBody<boolean>> => {
   try {
-    const response = await apiClient.post(
+    const response = await apiClient.post<ApiResBody<boolean>>(
       "/verify-token",
       {},
       {
@@ -42,7 +45,7 @@ export const validateToken = async (token: string): Promise<boolean> => {
         },
       },
     );
-    return response.data.success;
+    return response.data;
   } catch (error) {
     return false;
   }

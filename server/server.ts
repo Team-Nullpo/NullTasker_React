@@ -175,13 +175,10 @@ app.use("/api", generalLimiter);
 
 // バリデーションルール
 const loginValidation: ValidationChain[] = [
-  body("loginId")
-    .isLength({
-      min: VALIDATION.LOGIN_ID.MIN_LENGTH,
-      max: VALIDATION.LOGIN_ID.MAX_LENGTH,
-    })
-    .matches(VALIDATION.LOGIN_ID.PATTERN)
-    .withMessage(VALIDATION.LOGIN_ID.ERROR_MESSAGE),
+  body("email")
+    .matches(VALIDATION.EMAIL.PATTERN)
+    .withMessage(VALIDATION.EMAIL.ERROR_MESSAGE),
+  body("password").notEmpty().withMessage("パスワードを入力してください"),
 ];
 
 const registerValidation: ValidationChain[] = [
@@ -452,7 +449,7 @@ app.post(
 // トークン検証エンドポイント
 app.post(
   "/api/verify-token",
-  (req: RequestWithType<void>, res: ResponseWithError<TokenPayload>): void => {
+  (req: Request, res: ResponseWithError<boolean>): void => {
     try {
       const authHeader = req.headers.authorization;
       const token = authHeader && authHeader.split(" ")[1];
@@ -476,7 +473,7 @@ app.post(
           return;
         }
 
-        res.json(decoded as TokenPayload);
+        res.json(true);
       });
     } catch (error) {
       console.error("トークン検証エラー:", error);

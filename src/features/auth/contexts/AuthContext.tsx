@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (storedToken && storedUser) {
           // トークンの検証
           const isValid = await authService.validateToken(storedToken);
-          if (isValid) {
+          if (!isErrorResponse(isValid) && isValid) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
           } else {
