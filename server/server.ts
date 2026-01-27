@@ -43,10 +43,12 @@ import {
   closeDatabase,
 } from "./db/database";
 
+import type { UserWithPassword, UsersData } from "./types";
+
 import type {
   User,
-  UserWithPassword,
-  UsersData,
+  UserPayload,
+  Token,
   TokenPayload,
   LoginRequest,
   LoginResponse,
@@ -54,12 +56,10 @@ import type {
   Ticket,
   TicketPayload,
   Project,
-  ProjectCreateData,
+  ProjectPayload,
   RequestWithType,
   ResponseWithError,
-  UserPayload,
-  Token,
-} from "./types";
+} from "@nulltasker/shared-types";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -163,7 +163,8 @@ const generalLimiter = rateLimit({
   windowMs: RATE_LIMIT_CONFIG.WINDOW_MS,
   max: RATE_LIMIT_CONFIG.MAX_REQUESTS,
   message: {
-    error:
+    success: false,
+    message:
       "リクエスト制限に達しました。しばらく時間をおいて再試行してください。",
   },
 });
@@ -221,13 +222,15 @@ const authenticateToken = (
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    res.status(401).json({ error: "アクセストークンが必要です" });
+    res
+      .status(401)
+      .json({ success: false, message: "アクセストークンが必要です" });
     return;
   }
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {
-      res.status(403).json({ error: "無効なトークンです" });
+      res.status(403).json({ success: false, message: "無効なトークンです" });
       return;
     }
     req.user = decoded as TokenPayload;
@@ -242,7 +245,9 @@ const requireSystemAdmin = (
   next: NextFunction,
 ): void => {
   if (!req.user || req.user.role !== "system_admin") {
-    res.status(403).json({ error: "システム管理者権限が必要です" });
+    res
+      .status(403)
+      .json({ success: false, message: "システム管理者権限が必要です" });
     return;
   }
   next();
@@ -271,6 +276,7 @@ app.post(
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: errors.array()[0].msg,
           errors: errors.array(),
@@ -291,6 +297,7 @@ app.post(
       );
       if (existingUser) {
         res.status(409).json({
+          success: false,
           errorCode: "CONFLICT_ERROR",
           message: "既に登録済みのメールアドレスまたは表示名です",
         });
@@ -337,6 +344,7 @@ app.post(
     } catch (error) {
       console.error("ユーザー登録エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "サーバーエラーが発生しました",
       });
@@ -356,6 +364,7 @@ app.post(
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: errors.array()[0].msg,
           errors: errors.array(),
@@ -367,6 +376,7 @@ app.post(
 
       if (!email || !password) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "メールアドレスとパスワードを入力してください",
         });
@@ -379,6 +389,7 @@ app.post(
       const user = users.users.find((u) => u.email === email);
       if (!user) {
         res.status(401).json({
+          success: false,
           errorCode: "INVALID_CREDENTIALS",
           message: "メールアドレスまたはパスワードが正しくありません",
         });
@@ -388,6 +399,7 @@ app.post(
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         res.status(401).json({
+          success: false,
           errorCode: "INVALID_CREDENTIALS",
           message: "メールアドレスまたはパスワードが正しくありません",
         });
@@ -429,6 +441,7 @@ app.post(
         NODE_ENV === "development" ? error : (error as Error).message,
       );
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "サーバーエラーが発生しました",
       });
@@ -446,6 +459,7 @@ app.post(
 
       if (!token) {
         res.status(401).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "トークンが提供されていません",
         });
@@ -455,6 +469,7 @@ app.post(
       jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
           res.status(403).json({
+            success: false,
             errorCode: "INVALID_CREDENTIALS",
             message: "トークンが無効です",
           });
@@ -466,6 +481,7 @@ app.post(
     } catch (error) {
       console.error("トークン検証エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "サーバーエラーが発生しました",
       });
@@ -485,6 +501,7 @@ app.post(
 
       if (!token) {
         res.status(401).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "リフレッシュトークンが必要です",
         });
@@ -501,6 +518,7 @@ app.post(
         : null;
       if (!decodedPayload || decodedPayload.type !== "refresh") {
         res.status(403).json({
+          success: false,
           errorCode: "INVALID_CREDENTIALS",
           message: "無効なリフレッシュトークンです",
         });
@@ -513,6 +531,7 @@ app.post(
 
       if (!user) {
         res.status(404).json({
+          success: false,
           message: "ユーザーが見つかりません",
         });
         return;
@@ -535,6 +554,7 @@ app.post(
       });
     } catch {
       res.status(403).json({
+        success: false,
         errorCode: "INVALID_CREDENTIALS",
         message: "無効なリフレッシュトークンです",
       });
@@ -574,6 +594,7 @@ app.get(
       const user = data.users.find((u) => u.id === req.user?.id);
       if (!user) {
         res.status(404).json({
+          success: false,
           errorCode: "USER_NOT_FOUND",
           message: "ユーザーが見つかりません",
         });
@@ -585,6 +606,7 @@ app.get(
     } catch (error) {
       console.error("ユーザー情報取得エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "ユーザー情報の取得に失敗しました",
       });
@@ -604,7 +626,12 @@ app.put(
       };
 
       if (!displayName || !email) {
-        res.status(400).json({ error: "表示名とメールアドレスは必須です" });
+        res
+          .status(400)
+          .json({
+            success: false,
+            message: "表示名とメールアドレスは必須です",
+          });
         return;
       }
 
@@ -613,7 +640,9 @@ app.put(
 
       const userIndex = data.users.findIndex((u) => u.id === req.user?.id);
       if (userIndex === -1) {
-        res.status(404).json({ error: "ユーザーが見つかりません" });
+        res
+          .status(404)
+          .json({ success: false, message: "ユーザーが見つかりません" });
         return;
       }
 
@@ -624,7 +653,10 @@ app.put(
       if (emailExists) {
         res
           .status(409)
-          .json({ error: "このメールアドレスは既に使用されています" });
+          .json({
+            success: false,
+            message: "このメールアドレスは既に使用されています",
+          });
         return;
       }
 
@@ -642,7 +674,9 @@ app.put(
       res.status(200).json(userWithoutPassword);
     } catch (error) {
       console.error("プロフィール更新エラー:", error);
-      res.status(500).json({ error: "プロフィールの更新に失敗しました" });
+      res
+        .status(500)
+        .json({ success: false, message: "プロフィールの更新に失敗しました" });
     }
   },
 );
@@ -661,7 +695,10 @@ app.put(
       if (!currentPassword || !newPassword) {
         res
           .status(400)
-          .json({ error: "現在のパスワードと新しいパスワードは必須です" });
+          .json({
+            success: false,
+            message: "現在のパスワードと新しいパスワードは必須です",
+          });
         return;
       }
 
@@ -670,7 +707,9 @@ app.put(
 
       const user = data.users.find((u) => u.id === req.user?.id);
       if (!user) {
-        res.status(404).json({ error: "ユーザーが見つかりません" });
+        res
+          .status(404)
+          .json({ success: false, message: "ユーザーが見つかりません" });
         return;
       }
 
@@ -679,7 +718,12 @@ app.put(
         user.password,
       );
       if (!isCurrentPasswordValid) {
-        res.status(400).json({ error: "現在のパスワードが正しくありません" });
+        res
+          .status(400)
+          .json({
+            success: false,
+            message: "現在のパスワードが正しくありません",
+          });
         return;
       }
 
@@ -693,7 +737,9 @@ app.put(
       res.status(204).end();
     } catch (error) {
       console.error("パスワード変更エラー:", error);
-      res.status(500).json({ error: "パスワードの変更に失敗しました" });
+      res
+        .status(500)
+        .json({ success: false, message: "パスワードの変更に失敗しました" });
     }
   },
 );
@@ -719,6 +765,7 @@ app.get(
       const currentUser = data.users.find((u) => u.id === req.user?.id);
       if (!currentUser) {
         res.status(404).json({
+          success: false,
           errorCode: "USER_NOT_FOUND",
           message: "ユーザーが見つかりません",
         });
@@ -737,6 +784,7 @@ app.get(
     } catch (error) {
       console.error("ユーザー一覧取得エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "ユーザー一覧の取得に失敗しました",
       });
@@ -765,6 +813,7 @@ app.get(
     } catch (error) {
       console.error("管理者データ取得エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "ユーザーデータの取得に失敗しました",
       });
@@ -786,6 +835,7 @@ app.post(
 
       if (!displayName || !email || !role || !password) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "必須項目が不足しています",
         });
@@ -801,6 +851,7 @@ app.post(
 
       if (existingUser) {
         res.status(409).json({
+          success: false,
           errorCode: "CONFLICT_ERROR",
           message: "ユーザー名またはメールアドレスが既に使用されています",
         });
@@ -833,6 +884,7 @@ app.post(
     } catch (error) {
       console.error("ユーザー作成エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "ユーザーの作成に失敗しました",
       });
@@ -855,6 +907,7 @@ app.put(
 
       if (!displayName || !email || !role) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "必須項目が不足しています",
         });
@@ -867,6 +920,7 @@ app.put(
       const userIndex = data.users.findIndex((u) => u.id === userId);
       if (userIndex === -1) {
         res.status(404).json({
+          success: false,
           errorCode: "USER_NOT_FOUND",
           message: "ユーザーが見つかりません",
         });
@@ -879,6 +933,7 @@ app.put(
 
       if (emailExists) {
         res.status(409).json({
+          success: false,
           errorCode: "CONFLICT_ERROR",
           message: "このメールアドレスは既に使用されています",
         });
@@ -906,6 +961,7 @@ app.put(
     } catch (error) {
       console.error("ユーザー更新エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "ユーザーの更新に失敗しました",
       });
@@ -924,6 +980,7 @@ app.delete(
 
       if (userId === req.user?.id) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "自分自身を削除することはできません",
         });
@@ -936,6 +993,7 @@ app.delete(
       const userIndex = data.users.findIndex((u) => u.id === userId);
       if (userIndex === -1) {
         res.status(404).json({
+          success: false,
           errorCode: "USER_NOT_FOUND",
           message: "ユーザーが見つかりません",
         });
@@ -951,6 +1009,7 @@ app.delete(
     } catch (error) {
       console.error("ユーザー削除エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "ユーザーの削除に失敗しました",
       });
@@ -970,6 +1029,7 @@ app.get(
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "プロジェクトデータの取得に失敗しました",
       });
@@ -983,7 +1043,7 @@ app.post(
   authenticateToken,
   requireSystemAdmin,
   async (
-    req: RequestWithType<ProjectCreateData>,
+    req: RequestWithType<ProjectPayload>,
     res: ResponseWithError<Project>,
   ): Promise<void> => {
     try {
@@ -991,6 +1051,7 @@ app.post(
 
       if (!name || !owner) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "必須項目が不足しています",
         });
@@ -1003,13 +1064,14 @@ app.post(
       const ownerUser = users.users.find((u) => u.id === owner);
       if (!ownerUser) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "指定されたオーナーが存在しません",
         });
         return;
       }
 
-      const newProject: ProjectCreateData = {
+      const newProject: Project = {
         id: generateId("project"),
         name,
         description: description || "",
@@ -1023,6 +1085,8 @@ app.post(
           notifications: true,
           autoAssign: false,
         },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const savedProject = ProjectOperations.add(newProject);
@@ -1048,6 +1112,7 @@ app.post(
     } catch (error) {
       console.error("プロジェクト作成エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "プロジェクトの作成に失敗しました",
       });
@@ -1061,7 +1126,7 @@ app.put(
   authenticateToken,
   requireSystemAdmin,
   async (
-    req: RequestWithType<ProjectCreateData>,
+    req: RequestWithType<ProjectPayload>,
     res: ResponseWithError<Project>,
   ): Promise<void> => {
     try {
@@ -1070,6 +1135,7 @@ app.put(
 
       if (!name || !owner) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "必須項目が不足しています",
         });
@@ -1083,6 +1149,7 @@ app.put(
       const projectIndex = projects?.findIndex((p) => p.id === projectId);
       if (projectIndex === -1 || !projects) {
         res.status(404).json({
+          success: false,
           message: "プロジェクトが見つかりません",
         });
         return;
@@ -1091,6 +1158,7 @@ app.put(
       const ownerUser = users.users.find((u) => u.id === owner);
       if (!ownerUser) {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "指定されたオーナーが存在しません",
         });
@@ -1105,6 +1173,7 @@ app.put(
 
       if (!updatedProject) {
         res.status(404).json({
+          success: false,
           message: "プロジェクトの更新に失敗しました",
         });
         return;
@@ -1114,6 +1183,7 @@ app.put(
     } catch (error) {
       console.error("プロジェクト更新エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "プロジェクトの更新に失敗しました",
       });
@@ -1132,6 +1202,7 @@ app.delete(
 
       if (projectId === "default") {
         res.status(400).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "デフォルトプロジェクトは削除できません",
         });
@@ -1145,6 +1216,7 @@ app.delete(
       const projectIndex = projects?.findIndex((p) => p.id === projectId);
       if (projectIndex === -1 || !projects) {
         res.status(404).json({
+          success: false,
           message: "プロジェクトが見つかりません",
         });
         return;
@@ -1166,6 +1238,7 @@ app.delete(
     } catch (error) {
       console.error("プロジェクト削除エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "プロジェクトの削除に失敗しました",
       });
@@ -1220,7 +1293,9 @@ app.post(
       });
     } catch (error) {
       console.error("バックアップ作成エラー:", error);
-      res.status(500).json({ error: "バックアップの作成に失敗しました" });
+      res
+        .status(500)
+        .json({ success: false, message: "バックアップの作成に失敗しました" });
     }
   },
 );
@@ -1251,7 +1326,12 @@ app.get(
       res.send(JSON.stringify(backupData, null, 2));
     } catch (error) {
       console.error("データバックアップダウンロードエラー:", error);
-      res.status(500).json({ error: "データバックアップの取得に失敗しました" });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "データバックアップの取得に失敗しました",
+        });
     }
   },
 );
@@ -1278,7 +1358,12 @@ app.get(
       res.send(JSON.stringify(backupData, null, 2));
     } catch (error) {
       console.error("設定バックアップダウンロードエラー:", error);
-      res.status(500).json({ error: "設定バックアップの取得に失敗しました" });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "設定バックアップの取得に失敗しました",
+        });
     }
   },
 );
@@ -1305,7 +1390,9 @@ app.get(
       res.json(settings);
     } catch (error) {
       console.error("設定読み込みエラー:", error);
-      res.status(500).json({ error: "設定の読み込みに失敗しました" });
+      res
+        .status(500)
+        .json({ success: false, message: "設定の読み込みに失敗しました" });
     }
   },
 );
@@ -1315,9 +1402,9 @@ app.get(
 app.get(
   "/api/tasks",
   authenticateToken,
-  (_req: Request, res: ResponseWithError<Ticket[]>): void => {
+  (req: Request, res: ResponseWithError<Ticket[]>): void => {
     try {
-      debugLog("タスク取得リクエスト受信:", _req.user?.id);
+      debugLog("タスク取得リクエスト受信:", req.user?.id);
 
       const tickets = TicketOperations.getAll();
 
@@ -1327,6 +1414,7 @@ app.get(
     } catch (error) {
       console.error("タスク読み込みエラー:", (error as Error).message);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "タスクの読み込みに失敗しました",
       });
@@ -1352,6 +1440,7 @@ app.post(
 
       if (existingTask) {
         res.status(409).json({
+          success: false,
           errorCode: "VALIDATION_ERROR",
           message: "同名のタスクが存在します",
         });
@@ -1386,6 +1475,7 @@ app.post(
     } catch (error) {
       console.error("タスク保存エラー:", (error as Error).message);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "タスクの保存に失敗しました",
       });
@@ -1407,6 +1497,7 @@ app.put(
       const existingTicket = TicketOperations.getById(ticketId);
       if (!existingTicket) {
         res.status(404).json({
+          success: false,
           message: "チケットが見つかりません",
         });
         return;
@@ -1422,6 +1513,7 @@ app.put(
 
       if (!updatedTask) {
         res.status(404).json({
+          success: false,
           message: "チケットの更新に失敗しました",
         });
         return;
@@ -1431,6 +1523,7 @@ app.put(
     } catch (error) {
       console.error("チケット更新エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "チケットの更新に失敗しました",
       });
@@ -1448,7 +1541,9 @@ app.delete(
       const deleted = TicketOperations.delete(ticketId);
 
       if (!deleted) {
-        res.status(404).json({ message: "チケットが見つかりません" });
+        res
+          .status(404)
+          .json({ success: false, message: "チケットが見つかりません" });
         return;
       }
 
@@ -1456,6 +1551,7 @@ app.delete(
     } catch (error) {
       console.error("チケット削除エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "チケットの削除に失敗しました",
       });
@@ -1496,6 +1592,7 @@ app.post(
     } catch (error) {
       console.error("バックアップ作成エラー:", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "バックアップの作成に失敗しました",
       });
@@ -1518,6 +1615,7 @@ app.get(
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "プロジェクトデータの取得に失敗しました",
       });
@@ -1534,7 +1632,9 @@ app.get(
       const project = ProjectOperations.getById(projectId);
 
       if (!project || !project.members.includes(req.user?.id || "")) {
-        res.status(404).json({ message: "プロジェクトが見つかりません" });
+        res
+          .status(404)
+          .json({ success: false, message: "プロジェクトが見つかりません" });
         return;
       }
 
@@ -1542,6 +1642,7 @@ app.get(
     } catch (error) {
       console.error("プロジェクトデータの取得に失敗: ", error);
       res.status(500).json({
+        success: false,
         errorCode: "SERVER_ERROR",
         message: "プロジェクトデータ取得に失敗しました",
       });
