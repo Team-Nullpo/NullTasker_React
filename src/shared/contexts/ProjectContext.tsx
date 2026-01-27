@@ -6,7 +6,8 @@ import {
   ReactNode,
 } from "react";
 import { projectService } from "@/shared/services";
-import type { Project } from "@/shared/types";
+import type { Project } from "@nulltasker/shared-types";
+import { isErrorResponse } from "@/shared/utils";
 
 interface ProjectContextType {
   currentProjectId: string | null;
@@ -45,21 +46,24 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
 
         // プロジェクト一覧を取得
         const projectsData = await projectService.getAllProjects();
+        if (isErrorResponse(projectsData)) {
+          throw new Error(projectsData.message);
+        }
         console.log("[ProjectContext] プロジェクト一覧を取得:", projectsData);
-        setProjects(projectsData.projects);
+        setProjects(projectsData);
 
         // localStorageから現在のプロジェクトIDを復元
         const savedProjectId = localStorage.getItem("currentProjectId");
 
         if (
           savedProjectId &&
-          projectsData.projects.some((p) => p.id === savedProjectId)
+          projectsData.some((p) => p.id === savedProjectId)
         ) {
           // 保存されているプロジェクトが存在する場合
           await changeCurrentProject(savedProjectId);
-        } else if (projectsData.projects.length > 0) {
+        } else if (projectsData.length > 0) {
           // デフォルトで最初のプロジェクトを選択
-          await changeCurrentProject(projectsData.projects[0].id);
+          await changeCurrentProject(projectsData[0].id);
         }
       } catch (error) {
         console.error("プロジェクトの初期化に失敗しました:", error);
@@ -75,6 +79,9 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
   const changeCurrentProject = async (projectId: string) => {
     try {
       const project = await projectService.getProjectById(projectId);
+      if (isErrorResponse(project)) {
+        throw new Error(project.message);
+      }
       setCurrentProjectId(projectId);
       setCurrentProject(project);
 
@@ -95,16 +102,19 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
   const refreshProjects = async () => {
     try {
       const projectsData = await projectService.getAllProjects();
-      setProjects(projectsData.projects);
+      if (isErrorResponse(projectsData)) {
+        throw new Error(projectsData.message);
+      }
+      setProjects(projectsData);
 
       // 現在のプロジェクトが削除されていないか確認
       if (
         currentProjectId &&
-        !projectsData.projects.some((p) => p.id === currentProjectId)
+        !projectsData.some((p) => p.id === currentProjectId)
       ) {
         // 削除されている場合は別のプロジェクトを選択
-        if (projectsData.projects.length > 0) {
-          await changeCurrentProject(projectsData.projects[0].id);
+        if (projectsData.length > 0) {
+          await changeCurrentProject(projectsData[0].id);
         } else {
           setCurrentProjectId(null);
           setCurrentProject(null);

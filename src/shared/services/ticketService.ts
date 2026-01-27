@@ -1,10 +1,7 @@
 import apiClient from "@/lib/apiClient";
-import type {
-  Ticket,
-  TicketsResponse,
-  TicketFormData,
-  ApiResponse,
-} from "@/shared/types";
+import type { TicketFormData, ApiResBody } from "@/shared/types";
+import type { Ticket } from "@nulltasker/shared-types";
+import { isErrorResponse } from "@/shared/utils";
 
 /**
  * チケット管理APIサービス
@@ -13,12 +10,12 @@ export const ticketService = {
   /**
    * すべてのチケットを取得
    */
-  async getAllTickets(): Promise<TicketsResponse> {
+  async getAllTickets(): Promise<ApiResBody<Ticket[]>> {
     try {
       console.log("[ticketService] チケット一覧取得開始");
       const token = localStorage.getItem("token");
       console.log("[ticketService] トークン状態:", token ? "あり" : "なし");
-      const response = await apiClient.get<TicketsResponse>("/tasks");
+      const response = await apiClient.get<ApiResBody<Ticket[]>>("/tasks");
       console.log("[ticketService] チケット一覧取得成功:", response.data);
       return response.data;
     } catch (error: any) {
@@ -34,8 +31,10 @@ export const ticketService = {
   /**
    * 特定のチケットを取得
    */
-  async getTicketById(ticketId: string): Promise<Ticket> {
-    const response = await apiClient.get<Ticket>(`/tasks/${ticketId}`);
+  async getTicketById(ticketId: string): Promise<ApiResBody<Ticket>> {
+    const response = await apiClient.get<ApiResBody<Ticket>>(
+      `/tasks/${ticketId}`,
+    );
     return response.data;
   },
 
@@ -43,35 +42,44 @@ export const ticketService = {
    * プロジェクトIDでチケットを取得
    */
   async getTicketsByProject(projectId: string): Promise<Ticket[]> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tickets.filter(
-      (ticket) => ticket.project === projectId,
-    );
+    const response = await this.getAllTickets();
+    if (isErrorResponse(response)) {
+      throw new Error(response.message);
+    }
+    const tickets = response.filter((ticket) => ticket.project === projectId);
+    return tickets;
   },
 
   /**
    * 担当者IDでチケットを取得
    */
   async getTicketsByAssignee(assigneeId: string): Promise<Ticket[]> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tickets.filter(
-      (ticket) => ticket.assignee === assigneeId,
-    );
+    const response = await this.getAllTickets();
+    if (isErrorResponse(response)) {
+      throw new Error(response.message);
+    }
+    return response.filter((ticket) => ticket.assignee === assigneeId);
   },
 
   /**
    * ステータスでチケットを取得
    */
   async getTicketsByStatus(status: string): Promise<Ticket[]> {
-    const response = await apiClient.get<TicketsResponse>("/tasks");
-    return response.data.tickets.filter((ticket) => ticket.status === status);
+    const response = await this.getAllTickets();
+    if (isErrorResponse(response)) {
+      throw new Error(response.message);
+    }
+    return response.filter((ticket) => ticket.status === status);
   },
 
   /**
    * 新しいチケットを作成
    */
-  async createTicket(ticketData: TicketFormData): Promise<Ticket> {
-    const response = await apiClient.post<Ticket>("/tasks", ticketData);
+  async createTicket(ticketData: TicketFormData): Promise<ApiResBody<Ticket>> {
+    const response = await apiClient.post<ApiResBody<Ticket>>(
+      "/tasks",
+      ticketData,
+    );
     return response.data;
   },
 
@@ -99,9 +107,8 @@ export const ticketService = {
   /**
    * バックアップを作成
    */
-  async createBackup(): Promise<ApiResponse<{ backupFile: string }>> {
-    const response =
-      await apiClient.post<ApiResponse<{ backupFile: string }>>("/backup");
+  async createBackup(): Promise<void> {
+    const response = await apiClient.post<void>("/backup");
     return response.data;
   },
 
@@ -124,6 +131,9 @@ export const ticketService = {
    */
   async addActualHours(ticketId: string, hours: number): Promise<Ticket> {
     const ticket = await this.getTicketById(ticketId);
+    if (isErrorResponse(ticket)) {
+      throw new Error(ticket.message);
+    }
     const newActualHours = (ticket.actual_hours || 0) + hours;
     return this.updateTicket(ticketId, { actual_hours: newActualHours });
   },
@@ -133,6 +143,9 @@ export const ticketService = {
    */
   async addTag(ticketId: string, tag: string): Promise<Ticket> {
     const ticket = await this.getTicketById(ticketId);
+    if (isErrorResponse(ticket)) {
+      throw new Error(ticket.message);
+    }
     const newTags = [...(ticket.tags || []), tag];
     return this.updateTicket(ticketId, { tags: newTags });
   },
@@ -142,6 +155,9 @@ export const ticketService = {
    */
   async removeTag(ticketId: string, tag: string): Promise<Ticket> {
     const ticket = await this.getTicketById(ticketId);
+    if (isErrorResponse(ticket)) {
+      throw new Error(ticket.message);
+    }
     const newTags = (ticket.tags || []).filter((t) => t !== tag);
     return this.updateTicket(ticketId, { tags: newTags });
   },

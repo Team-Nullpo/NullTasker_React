@@ -626,12 +626,10 @@ app.put(
       };
 
       if (!displayName || !email) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            message: "表示名とメールアドレスは必須です",
-          });
+        res.status(400).json({
+          success: false,
+          message: "表示名とメールアドレスは必須です",
+        });
         return;
       }
 
@@ -651,12 +649,10 @@ app.put(
       );
 
       if (emailExists) {
-        res
-          .status(409)
-          .json({
-            success: false,
-            message: "このメールアドレスは既に使用されています",
-          });
+        res.status(409).json({
+          success: false,
+          message: "このメールアドレスは既に使用されています",
+        });
         return;
       }
 
@@ -693,12 +689,10 @@ app.put(
       };
 
       if (!currentPassword || !newPassword) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            message: "現在のパスワードと新しいパスワードは必須です",
-          });
+        res.status(400).json({
+          success: false,
+          message: "現在のパスワードと新しいパスワードは必須です",
+        });
         return;
       }
 
@@ -718,12 +712,10 @@ app.put(
         user.password,
       );
       if (!isCurrentPasswordValid) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            message: "現在のパスワードが正しくありません",
-          });
+        res.status(400).json({
+          success: false,
+          message: "現在のパスワードが正しくありません",
+        });
         return;
       }
 
@@ -1326,12 +1318,10 @@ app.get(
       res.send(JSON.stringify(backupData, null, 2));
     } catch (error) {
       console.error("データバックアップダウンロードエラー:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "データバックアップの取得に失敗しました",
-        });
+      res.status(500).json({
+        success: false,
+        message: "データバックアップの取得に失敗しました",
+      });
     }
   },
 );
@@ -1358,12 +1348,10 @@ app.get(
       res.send(JSON.stringify(backupData, null, 2));
     } catch (error) {
       console.error("設定バックアップダウンロードエラー:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "設定バックアップの取得に失敗しました",
-        });
+      res.status(500).json({
+        success: false,
+        message: "設定バックアップの取得に失敗しました",
+      });
     }
   },
 );
@@ -1406,7 +1394,13 @@ app.get(
     try {
       debugLog("タスク取得リクエスト受信:", req.user?.id);
 
-      const tickets = TicketOperations.getAll();
+      const userProjects = req.user?.projects || [];
+      const allTickets = TicketOperations.getAll();
+
+      // ユーザーがアクセスできるプロジェクトのチケットのみを返す
+      const tickets = allTickets.filter((ticket) =>
+        userProjects.includes(ticket.project),
+      );
 
       debugLog("タスク取得成功:", tickets.length, "件");
 
