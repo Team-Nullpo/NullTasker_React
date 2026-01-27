@@ -1,4 +1,5 @@
 import {
+  TaskPriority,
   TaskStatus,
   ApiErrorResponse,
   UserRole,

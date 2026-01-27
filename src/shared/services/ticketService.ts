@@ -89,8 +89,8 @@ export const ticketService = {
   async updateTicket(
     ticketId: string,
     ticketData: Partial<TicketFormData>,
-  ): Promise<Ticket> {
-    const response = await apiClient.put<Ticket>(
+  ): Promise<ApiResBody<Ticket>> {
+    const response = await apiClient.put<ApiResBody<Ticket>>(
       `/tasks/${ticketId}`,
       ticketData,
     );
@@ -100,36 +100,48 @@ export const ticketService = {
   /**
    * チケットを削除
    */
-  async deleteTicket(ticketId: string): Promise<void> {
-    await apiClient.delete(`/tasks/${ticketId}`);
+  async deleteTicket(ticketId: string): Promise<ApiResBody<void>> {
+    const response = await apiClient.delete<ApiResBody<void>>(
+      `/tasks/${ticketId}`,
+    );
+    return response.data;
   },
 
   /**
    * バックアップを作成
    */
-  async createBackup(): Promise<void> {
-    const response = await apiClient.post<void>("/backup");
+  async createBackup(): Promise<ApiResBody<void>> {
+    const response = await apiClient.post<ApiResBody<void>>("/backup");
     return response.data;
   },
 
   /**
    * チケットの進捗を更新
    */
-  async updateProgress(ticketId: string, progress: number): Promise<Ticket> {
+  async updateProgress(
+    ticketId: string,
+    progress: number,
+  ): Promise<ApiResBody<Ticket>> {
     return this.updateTicket(ticketId, { progress });
   },
 
   /**
    * チケットのステータスを更新
    */
-  async updateStatus(ticketId: string, status: string): Promise<Ticket> {
+  async updateStatus(
+    ticketId: string,
+    status: string,
+  ): Promise<ApiResBody<Ticket>> {
     return this.updateTicket(ticketId, { status: status as any });
   },
 
   /**
    * チケットに実績工数を追加
    */
-  async addActualHours(ticketId: string, hours: number): Promise<Ticket> {
+  async addActualHours(
+    ticketId: string,
+    hours: number,
+  ): Promise<ApiResBody<Ticket>> {
     const ticket = await this.getTicketById(ticketId);
     if (isErrorResponse(ticket)) {
       throw new Error(ticket.message);
@@ -141,7 +153,7 @@ export const ticketService = {
   /**
    * チケットにタグを追加
    */
-  async addTag(ticketId: string, tag: string): Promise<Ticket> {
+  async addTag(ticketId: string, tag: string): Promise<ApiResBody<Ticket>> {
     const ticket = await this.getTicketById(ticketId);
     if (isErrorResponse(ticket)) {
       throw new Error(ticket.message);
@@ -153,7 +165,7 @@ export const ticketService = {
   /**
    * チケットからタグを削除
    */
-  async removeTag(ticketId: string, tag: string): Promise<Ticket> {
+  async removeTag(ticketId: string, tag: string): Promise<ApiResBody<Ticket>> {
     const ticket = await this.getTicketById(ticketId);
     if (isErrorResponse(ticket)) {
       throw new Error(ticket.message);

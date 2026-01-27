@@ -2,7 +2,7 @@ import React from "react";
 import { TicketList } from "../components/TicketList";
 import TicketForm from "../components/TicketForm";
 import { Modal } from "@mui/material";
-import { Ticket } from "@/shared/types";
+import { Ticket } from "@nulltasker/shared-types";
 
 const TicketPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);

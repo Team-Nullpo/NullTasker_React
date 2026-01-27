@@ -2,6 +2,7 @@ import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import * as authService from "../services/authService";
 import "@/shared/styles/login.css";
+import { isErrorResponse } from "@/shared/utils";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -41,18 +42,18 @@ const RegisterPage = () => {
 
     try {
       const response = await authService.register({
-        loginId: formData.loginId,
         displayName: formData.displayName,
         email: formData.email,
         password: formData.password,
       });
 
-      if (response.success) {
-        alert("登録が完了しました。ログインしてください。");
-        navigate("/login");
-      } else {
+      if (isErrorResponse(response)) {
         setError(response.message || "登録に失敗しました");
+        return;
       }
+
+      alert("登録が完了しました。ログインしてください。");
+      navigate("/login");
     } catch (err: any) {
       setError(
         err.response?.data?.message || err.message || "登録に失敗しました",

@@ -7,9 +7,11 @@ import {
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import ticketService from "../../../shared/services/ticketService";
-import type { Ticket, TicketFormData } from "@/shared/types";
+import type { TicketFormData } from "@/shared/types";
+import type { Ticket } from "@nulltasker/shared-types";
 import styles from "./TicketForm.module.css";
 import { useProject } from "@/shared/contexts";
+import { isErrorResponse } from "@/shared/utils";
 
 type TicketFormProps = {
   ticket?: Ticket | null;
@@ -115,13 +117,21 @@ export const TicketForm: React.FC<TicketFormProps> = ({
 
       if (isEditMode && ticket) {
         // 更新
-        savedTicket = await ticketService.updateTicket(ticket.id, formData);
+        const response = await ticketService.updateTicket(ticket.id, formData);
+        if (isErrorResponse(response)) {
+          throw new Error(response.message);
+        }
+        savedTicket = response;
       } else {
         // 新規作成
-        savedTicket = await ticketService.createTicket({
+        const response = await ticketService.createTicket({
           ...formData,
           project: currentProjectId,
         });
+        if (isErrorResponse(response)) {
+          throw new Error(response.message);
+        }
+        savedTicket = response;
       }
 
       if (onSave) {
