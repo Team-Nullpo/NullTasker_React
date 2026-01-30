@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { TicketList } from "../components/TicketList";
 import TicketForm from "../components/TicketForm";
 import { Modal } from "@mui/material";

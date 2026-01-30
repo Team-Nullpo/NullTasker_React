@@ -3,11 +3,13 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import { projectService } from "@/shared/services";
 import type { Project } from "@nulltasker/shared-types";
 import { isErrorResponse } from "@/shared/utils";
+import { useAuth } from "@/features/auth";
 
 interface ProjectContextType {
   currentProjectId: string | null;
@@ -33,13 +35,52 @@ interface ProjectProviderProps {
 }
 
 export const ProjectProvider = ({ children }: ProjectProviderProps) => {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 現在のプロジェクトを変更
+  const changeCurrentProject = useCallback(async (projectId: string) => {
+    try {
+      const project = await projectService.getProjectById(projectId);
+      if (isErrorResponse(project)) {
+        throw new Error(project.message);
+      }
+      setCurrentProjectId(projectId);
+      setCurrentProject(project);
+
+      // localStorageに保存
+      localStorage.setItem("currentProjectId", projectId);
+
+      console.log(
+        "[ProjectContext] プロジェクトを切り替えました:",
+        project.name,
+      );
+    } catch (error) {
+      console.error("プロジェクトの取得に失敗しました:", error);
+      throw error;
+    }
+  }, []);
+
   // 初期化: localStorageから復元 & プロジェクト一覧取得
+  // isAuthenticated が変更されたとき（ログイン成功時）にも再実行
   useEffect(() => {
+    // 認証がロード中の場合は待機
+    if (isAuthLoading) {
+      return;
+    }
+
+    // 認証されていない場合はプロジェクト情報をクリア
+    if (!isAuthenticated) {
+      setProjects([]);
+      setCurrentProjectId(null);
+      setCurrentProject(null);
+      setIsLoading(false);
+      return;
+    }
+
     const initializeProjects = async () => {
       try {
         setIsLoading(true);
@@ -73,33 +114,10 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
     };
 
     initializeProjects();
-  }, []);
-
-  // 現在のプロジェクトを変更
-  const changeCurrentProject = async (projectId: string) => {
-    try {
-      const project = await projectService.getProjectById(projectId);
-      if (isErrorResponse(project)) {
-        throw new Error(project.message);
-      }
-      setCurrentProjectId(projectId);
-      setCurrentProject(project);
-
-      // localStorageに保存
-      localStorage.setItem("currentProjectId", projectId);
-
-      console.log(
-        "[ProjectContext] プロジェクトを切り替えました:",
-        project.name,
-      );
-    } catch (error) {
-      console.error("プロジェクトの取得に失敗しました:", error);
-      throw error;
-    }
-  };
+  }, [isAuthenticated, isAuthLoading, changeCurrentProject]);
 
   // プロジェクト一覧を再取得
-  const refreshProjects = async () => {
+  const refreshProjects = useCallback(async () => {
     try {
       const projectsData = await projectService.getAllProjects();
       if (isErrorResponse(projectsData)) {
@@ -125,7 +143,7 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
       console.error("プロジェクト一覧の取得に失敗しました:", error);
       throw error;
     }
-  };
+  }, [currentProjectId, changeCurrentProject]);
 
   const value: ProjectContextType = {
     currentProjectId,
