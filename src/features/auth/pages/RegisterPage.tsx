@@ -6,7 +6,6 @@ import { isErrorResponse } from "@/shared/utils";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
-    loginId: "",
     displayName: "",
     email: "",
     password: "",
@@ -73,20 +72,6 @@ const RegisterPage = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error-message">{error}</div>}
-
-          <div className="form-group">
-            <label htmlFor="loginId">ログインID</label>
-            <input
-              type="text"
-              id="loginId"
-              name="loginId"
-              value={formData.loginId}
-              onChange={handleChange}
-              required
-              autoFocus
-              disabled={isLoading}
-            />
-          </div>
 
           <div className="form-group">
             <label htmlFor="displayName">表示名</label>

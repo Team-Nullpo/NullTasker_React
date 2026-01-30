@@ -194,13 +194,6 @@ const loginValidation: ValidationChain[] = [
 ];
 
 const registerValidation: ValidationChain[] = [
-  body("loginId")
-    .isLength({
-      min: VALIDATION.LOGIN_ID.MIN_LENGTH,
-      max: VALIDATION.LOGIN_ID.MAX_LENGTH,
-    })
-    .matches(VALIDATION.LOGIN_ID.PATTERN)
-    .withMessage(VALIDATION.LOGIN_ID.ERROR_MESSAGE),
   body("password")
     .isLength({
       min: VALIDATION.PASSWORD.MIN_LENGTH,
@@ -209,14 +202,12 @@ const registerValidation: ValidationChain[] = [
     .matches(VALIDATION.PASSWORD.PATTERN)
     .withMessage(VALIDATION.PASSWORD.ERROR_MESSAGE),
   body("displayName")
-    .optional()
     .isLength({
       min: VALIDATION.DISPLAY_NAME.MIN_LENGTH,
       max: VALIDATION.DISPLAY_NAME.MAX_LENGTH,
     })
     .withMessage(VALIDATION.DISPLAY_NAME.ERROR_MESSAGE),
   body("email")
-    .optional()
     .matches(VALIDATION.EMAIL.PATTERN)
     .withMessage(VALIDATION.EMAIL.ERROR_MESSAGE),
 ];
