@@ -472,6 +472,7 @@ app.post(
           });
           return;
         }
+        console.log("トークン検証成功:", decoded);
 
         res.json(true);
       });

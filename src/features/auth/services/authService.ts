@@ -4,7 +4,6 @@ import {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
-  TokenPayload,
   User,
 } from "@nulltasker/shared-types";
 

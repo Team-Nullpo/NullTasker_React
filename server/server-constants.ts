@@ -120,7 +120,7 @@ export const VALIDATION = {
 
 // JWTトークンの有効期限
 export const JWT_EXPIRY = {
-  ACCESS_TOKEN: "1h",
+  ACCESS_TOKEN: "15min",
   REFRESH_TOKEN: "7d",
 } as const;
 
