@@ -68,6 +68,18 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 const DEBUG_MODE = NODE_ENV === "development";
 const USE_HTTPS = process.env.USE_HTTPS !== "false";
 
+// プロジェクトルートの計算
+// 開発時: __dirname = /project/server/ → 1つ上がルート
+// 本番時: __dirname = /project/server/dist/ → 2つ上がルート
+const IS_BUILT = __dirname.endsWith("dist");
+const PROJECT_ROOT = IS_BUILT
+  ? path.join(__dirname, "..", "..")
+  : path.join(__dirname, "..");
+// server/config などのサーバーディレクトリ
+// 開発時: /project/server/
+// 本番時: /project/server/ (ビルド後も同じ位置を参照)
+const SERVER_DIR = IS_BUILT ? path.join(__dirname, "..") : __dirname;
+
 // デバッグログ用のヘルパー関数
 const debugLog = (...args: unknown[]): void => {
   if (DEBUG_MODE) {
@@ -251,13 +263,13 @@ const requireSystemAdmin = (
 };
 
 // React ビルドファイルの配信
-app.use(express.static(path.join(__dirname, "..", "dist")));
+app.use(express.static(path.join(PROJECT_ROOT, "dist")));
 
 // ファイルパス
-const TICKETS_FILE = path.join(__dirname, "config", "tickets.json");
-const SETTINGS_FILE = path.join(__dirname, "config", "settings.json");
-const USERS_FILE = path.join(__dirname, "config", "users.json");
-const PROJECTS_FILE = path.join(__dirname, "config", "projects.json");
+const TICKETS_FILE = path.join(SERVER_DIR, "config", "tickets.json");
+const SETTINGS_FILE = path.join(SERVER_DIR, "config", "settings.json");
+const USERS_FILE = path.join(SERVER_DIR, "config", "users.json");
+const PROJECTS_FILE = path.join(SERVER_DIR, "config", "projects.json");
 
 // ============ 認証API ============
 
@@ -1255,7 +1267,7 @@ app.post(
   async (_req: Request, res: Response): Promise<void> => {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const backupDir = path.join(__dirname, "config", "backups");
+      const backupDir = path.join(SERVER_DIR, "config", "backups");
 
       await fs.mkdir(backupDir, { recursive: true });
 
@@ -1566,7 +1578,7 @@ app.post(
       };
 
       const backupFile = path.join(
-        __dirname,
+        SERVER_DIR,
         "config",
         "backups",
         `backup_tickets_${Date.now()}.json`,
@@ -1645,14 +1657,15 @@ app.get(
 
 // SPA fallback
 app.get("*", (_req: Request, res: Response): void => {
-  res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
+  res.sendFile(path.join(PROJECT_ROOT, "dist", "index.html"));
 });
 
 // ============ サーバー起動 ============
 
 if (USE_HTTPS) {
-  const sslKeyPath = path.join(__dirname, "..", "ssl", "server.key");
-  const sslCertPath = path.join(__dirname, "..", "ssl", "server.cert");
+  const sslKeyPath = path.join(PROJECT_ROOT, "ssl", "server.key");
+  const sslCertPath = path.join(PROJECT_ROOT, "ssl", "server.cert");
+  console.log(`Project root: ${PROJECT_ROOT}`);
 
   if (!fsSync.existsSync(sslKeyPath) || !fsSync.existsSync(sslCertPath)) {
     console.error("エラー: SSL証明書が見つかりません。");
@@ -1670,9 +1683,7 @@ if (USE_HTTPS) {
     console.log(`HTTPSサーバーが起動しました: https://localhost:${HTTPS_PORT}`);
     console.log(`tickets.jsonファイル: ${TICKETS_FILE}`);
     console.log(`settings.jsonファイル: ${SETTINGS_FILE}`);
-    console.log(
-      `静的ファイルディレクトリ: ${path.join(__dirname, "..", "dist")}`,
-    );
+    console.log(`静的ファイルディレクトリ: ${path.join(PROJECT_ROOT, "dist")}`);
     console.log("\n警告: 自己署名証明書を使用しています。");
     console.log(
       "ブラウザで証明書の警告が表示される場合は、例外として承認してください。",
@@ -1700,12 +1711,10 @@ if (USE_HTTPS) {
   app.listen(PORT, () => {
     console.log(`HTTPサーバーが起動しました: http://localhost:${PORT}`);
     console.log(
-      `データベースファイル: ${path.join(__dirname, "db", "nulltasker.db")}`,
+      `データベースファイル: ${path.join(SERVER_DIR, "db", "nulltasker.db")}`,
     );
     console.log(`settings.jsonファイル: ${SETTINGS_FILE}`);
-    console.log(
-      `静的ファイルディレクトリ: ${path.join(__dirname, "..", "dist")}`,
-    );
+    console.log(`静的ファイルディレクトリ: ${path.join(PROJECT_ROOT, "dist")}`);
   });
 }
 
