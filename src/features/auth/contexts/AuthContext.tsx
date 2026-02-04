@@ -6,8 +6,10 @@ import {
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContextType, UserProfile, LoginResponse } from "@/shared/types";
+import type { User } from "@nulltasker/shared-types";
+import type { AuthContextType } from "@/shared/types";
 import * as authService from "../services/authService";
+import { isErrorResponse } from "@/shared/utils";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -24,7 +26,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -39,7 +41,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (storedToken && storedUser) {
           // トークンの検証
           const isValid = await authService.validateToken(storedToken);
-          if (isValid) {
+          if (!isErrorResponse(isValid) && isValid) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
           } else {
@@ -62,34 +64,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initAuth();
   }, []);
 
-  const login = async (
-    loginId: string,
-    password: string,
-    rememberMe = false,
-  ) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     try {
-      const response: LoginResponse = await authService.login({
-        loginId,
+      const response = await authService.login({
+        email,
         password,
         rememberMe,
       });
 
-      if (response.success) {
-        setToken(response.token);
-        setUser(response.user);
-
-        // ローカルストレージに保存
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("user", JSON.stringify(response.user));
-
-        if (rememberMe && response.refreshToken) {
-          localStorage.setItem("refreshToken", response.refreshToken);
-        }
-
-        navigate("/");
-      } else {
+      if (isErrorResponse(response)) {
         throw new Error(response.message || "ログインに失敗しました");
       }
+      setToken(response.token);
+      setUser(response.user);
+
+      // ローカルストレージに保存
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      if (rememberMe && response.refreshToken) {
+        localStorage.setItem("refreshToken", response.refreshToken);
+      }
+
+      navigate("/");
     } catch (error) {
       console.error("ログインエラー:", error);
       throw error;

@@ -8,7 +8,7 @@ import {
   faChartLine,
   faExclamationCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import type { Ticket } from "@/shared/types";
+import type { Ticket } from "@nulltasker/shared-types";
 import styles from "./TicketCard.module.css";
 import { useProject } from "@/shared/contexts";
 

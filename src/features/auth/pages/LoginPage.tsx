@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import "@/shared/styles/login.css";
 
 const LoginPage = () => {
-  const [loginId, setLoginId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      await login(loginId, password, rememberMe);
+      await login(email, password, rememberMe);
     } catch (err: any) {
       setError(
         err.response?.data?.message || err.message || "ログインに失敗しました",
@@ -39,12 +39,12 @@ const LoginPage = () => {
           {error && <div className="error-message">{error}</div>}
 
           <div className="form-group">
-            <label htmlFor="loginId">ログインID</label>
+            <label htmlFor="email">メールアドレス</label>
             <input
               type="text"
-              id="loginId"
-              value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
               disabled={isLoading}
@@ -89,7 +89,8 @@ const LoginPage = () => {
         <div className="login-info">
           <p>デフォルト管理者アカウント:</p>
           <p>
-            ID: <strong>admin</strong> / パスワード: <strong>admin123</strong>
+            メールアドレス: <strong>admin@n.c</strong> / パスワード:{" "}
+            <strong>admin123</strong>
           </p>
         </div>
       </div>

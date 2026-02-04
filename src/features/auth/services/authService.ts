@@ -1,29 +1,41 @@
 import apiClient from "@/lib/apiClient";
+
 import {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
-  ApiResponse,
-} from "@/shared/types";
+  User,
+} from "@nulltasker/shared-types";
 
-export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-  const response = await apiClient.post<LoginResponse>("/login", data);
+import { ApiResBody } from "@/shared/types";
+
+export const login = async (
+  data: LoginRequest,
+): Promise<ApiResBody<LoginResponse>> => {
+  const response = await apiClient.post<ApiResBody<LoginResponse>>(
+    "/login",
+    data,
+  );
   return response.data;
 };
 
-export const register = async (data: RegisterRequest): Promise<ApiResponse> => {
-  const response = await apiClient.post<ApiResponse>("/register", data);
+export const register = async (
+  data: RegisterRequest,
+): Promise<ApiResBody<User>> => {
+  const response = await apiClient.post<ApiResBody<User>>("/register", data);
   return response.data;
 };
 
-export const logout = async (): Promise<ApiResponse> => {
-  const response = await apiClient.post<ApiResponse>("/logout");
+export const logout = async (): Promise<ApiResBody<User>> => {
+  const response = await apiClient.post<ApiResBody<User>>("/logout");
   return response.data;
 };
 
-export const validateToken = async (token: string): Promise<boolean> => {
+export const validateToken = async (
+  token: string,
+): Promise<ApiResBody<boolean>> => {
   try {
-    const response = await apiClient.post(
+    const response = await apiClient.post<ApiResBody<boolean>>(
       "/verify-token",
       {},
       {
@@ -32,7 +44,7 @@ export const validateToken = async (token: string): Promise<boolean> => {
         },
       },
     );
-    return response.data.success;
+    return response.data;
   } catch (error) {
     return false;
   }

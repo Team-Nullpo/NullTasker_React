@@ -1,51 +1,12 @@
-// ユーザー関連の型定義
-export type UserRole = "system_admin" | "project_admin" | "user";
-
-export interface User {
-  id: string;
-  loginId: string;
-  displayName: string;
-  email: string;
-  password?: string; // クライアント側では通常含まれない
-  role: UserRole;
-  projects: string[];
-  createdAt: string;
-  lastLogin: string | null;
-}
-
-export interface UserProfile {
-  id: string;
-  loginId: string;
-  displayName: string;
-  email: string;
-  role: UserRole;
-  projects: string[];
-}
-
-// 認証関連の型定義
-export interface LoginRequest {
-  loginId: string;
-  password: string;
-  rememberMe?: boolean;
-}
-
-export interface LoginResponse {
-  success: boolean;
-  token: string;
-  refreshToken: string;
-  user: UserProfile;
-  message: string;
-}
-
-export interface RegisterRequest {
-  loginId: string;
-  displayName: string;
-  email: string;
-  password: string;
-}
-
+import {
+  TaskPriority,
+  TaskStatus,
+  ApiErrorResponse,
+  UserRole,
+  User,
+} from "@nulltasker/shared-types";
 export interface AuthContextType {
-  user: UserProfile | null;
+  user: User | null;
   token: string | null;
   login: (
     loginId: string,
@@ -57,36 +18,7 @@ export interface AuthContextType {
   isLoading: boolean;
 }
 
-// タスク関連の型定義
-export type TaskPriority = "low" | "medium" | "high";
-export type TaskStatus = "todo" | "in_progress" | "review" | "done";
-
-// チケット関連の型定義（データベーススキーマに基づく）
-export interface Ticket {
-  id: string;
-  project: string;
-  title: string;
-  description: string;
-  assignee: string;
-  category: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  progress: number;
-  start_date: string | null;
-  due_date: string | null;
-  estimated_hours: number;
-  actual_hours: number;
-  tags: string[];
-  parent_task: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TicketsResponse {
-  tickets: Ticket[];
-  lastUpdated: string;
-}
-
+export type ApiResBody<T> = T | ApiErrorResponse;
 export interface TicketFormData {
   project: string;
   title: string;
@@ -102,75 +34,6 @@ export interface TicketFormData {
   actual_hours?: number;
   tags?: string[];
   parent_task?: string | null;
-}
-
-// プロジェクト関連の型定義
-export interface ProjectSettings {
-  categories: string[];
-  priorities: Array<{ value: TaskPriority; label: string; color: string }>;
-  statuses: Array<{ value: TaskStatus; label: string; color: string }>;
-  notifications: boolean;
-  autoAssign: boolean;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  owner: string;
-  members: string[];
-  admins: string[];
-  settings: ProjectSettings;
-  createdAt: string;
-  lastUpdated: string;
-}
-
-export interface ProjectsData {
-  projects: Project[];
-  lastUpdated: string;
-}
-
-// 設定関連の型定義
-export interface AppSettings {
-  appName: string;
-  version: string;
-  theme: "light" | "dark";
-  language: string;
-  timezone: string;
-  features: {
-    notifications: boolean;
-    autoSave: boolean;
-    backupEnabled: boolean;
-  };
-  lastUpdated: string;
-}
-
-// API レスポンスの型定義
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  error?: string;
-}
-
-export interface UsersResponse {
-  users: UserProfile[];
-  projects?: Project[];
-  lastUpdated: string;
-}
-
-// フォーム関連の型定義
-export interface TaskFormData {
-  title: string;
-  description: string;
-  assignee: string;
-  startDate: string;
-  dueDate: string;
-  priority: TaskPriority;
-  category: string;
-  status: TaskStatus;
-  progress: number;
-  project: string;
 }
 
 export interface UserFormData {

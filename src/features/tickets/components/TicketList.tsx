@@ -8,8 +8,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import TicketCard from "./TicketCard";
 import ticketService from "../../../shared/services/ticketService";
-import type { Ticket } from "@/shared/types";
+import type { Ticket } from "@nulltasker/shared-types";
 import styles from "./TicketList.module.css";
+import { isErrorResponse } from "@/shared/utils/api";
 
 type TicketListProps = {
   projectId?: string;
@@ -44,7 +45,10 @@ export const TicketList: React.FC<TicketListProps> = ({
       setError(null);
       console.log("[TicketList] チケット取得開始");
       const response = await ticketService.getAllTickets();
-      let ticketList = response.tickets;
+      if (isErrorResponse(response)) {
+        throw new Error(response.message);
+      }
+      let ticketList = response;
 
       // プロジェクトIDでフィルタリング
       if (projectId) {
